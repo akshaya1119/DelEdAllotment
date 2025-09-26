@@ -201,7 +201,8 @@ namespace DelEdAllotment.Controllers
                     int serial = 1;
                     foreach (var reg in group.Value)
                     {
-                        string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // "25"
+                        string yearPart = "23";
+                        //string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // "25"
                         string cityPart = cityCode.ToString("D2"); // 2 digits
                         string centrePart = centreCode.ToString("D2"); // 2 digits
                         string serialPart = serial.ToString("D3"); // 3 digits
