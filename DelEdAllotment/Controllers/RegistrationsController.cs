@@ -113,6 +113,7 @@ namespace DelEdAllotment.Controllers
                 var registrations = await _context.Registration
                     .OrderBy(r => r.Name)
                     .ThenBy(r => r.DOB)
+                    .ThenBy(r => r.RegistrationNo)
                     .ToListAsync();
 
                 var centres = await _context.Centre.ToListAsync();
@@ -185,6 +186,7 @@ namespace DelEdAllotment.Controllers
                 var registrations = await _context.Registration
                     .OrderBy(r => r.Name)
                     .ThenBy(r => r.DOB)
+                    .ThenBy(r => r.RegistrationNo)
                     .ToListAsync();
 
                 // Group by AssignedCentre
