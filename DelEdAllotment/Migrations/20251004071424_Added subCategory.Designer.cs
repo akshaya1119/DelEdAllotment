@@ -4,6 +4,7 @@ using DelEdAllotment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DelEdAllotment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004071424_Added subCategory")]
+    partial class AddedsubCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -71,9 +74,6 @@ namespace DelEdAllotment.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
-                        .HasColumnType("longtext");
-
                     b.Property<int?>("AssignedCentre")
                         .HasColumnType("int");
 
@@ -93,9 +93,6 @@ namespace DelEdAllotment.Migrations
 
                     b.Property<string>("FName")
                         .HasColumnType("longtext");
-
-                    b.Property<int?>("FeeAmount")
-                        .HasColumnType("int");
 
                     b.Property<string>("Gender")
                         .IsRequired()
@@ -133,9 +130,6 @@ namespace DelEdAllotment.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("PhType")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("PhotoId")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -146,12 +140,6 @@ namespace DelEdAllotment.Migrations
                     b.Property<int>("RegistrationNo")
                         .HasColumnType("int");
 
-                    b.Property<string>("Remarks")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime?>("RetirementDate")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<int?>("RollNumber")
                         .HasColumnType("int");
 
@@ -160,9 +148,6 @@ namespace DelEdAllotment.Migrations
 
                     b.Property<string>("SubCategory")
                         .HasColumnType("longtext");
-
-                    b.Property<long?>("TransactionId")
-                        .HasColumnType("bigint");
 
                     b.Property<string>("Warg")
                         .IsRequired()

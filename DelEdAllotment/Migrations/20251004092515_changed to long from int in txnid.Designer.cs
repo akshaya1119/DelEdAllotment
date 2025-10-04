@@ -4,6 +4,7 @@ using DelEdAllotment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DelEdAllotment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004092515_changed to long from int in txnid")]
+    partial class changedtolongfromintintxnid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -71,12 +74,6 @@ namespace DelEdAllotment.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("AssignedCentre")
-                        .HasColumnType("int");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -115,9 +112,6 @@ namespace DelEdAllotment.Migrations
                     b.Property<string>("HusbandName")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("MName")
                         .HasColumnType("longtext");
 
@@ -151,12 +145,6 @@ namespace DelEdAllotment.Migrations
 
                     b.Property<DateTime?>("RetirementDate")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("RollNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SignaturePath")
-                        .HasColumnType("longtext");
 
                     b.Property<string>("SubCategory")
                         .HasColumnType("longtext");

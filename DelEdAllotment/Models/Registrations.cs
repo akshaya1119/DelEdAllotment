@@ -26,9 +26,18 @@ namespace DelEdAllotment.Models
         public DateTime GraduationDate { get; set; }
         public string PhotoId { get; set; }
 
+        public string? SubCategory { get; set; }
         public string HomeDistrict { get; set; }
+        public string? PhType { get; set; }
+        public int? FeeAmount { get; set; }
+        public long? TransactionId { get; set; }
+        public string? Remarks { get; set; }
+        public DateTime? RetirementDate { get; set; }
+        public string? Address { get; set; }
         public int? AssignedCentre { get; set; }
         public int? RollNumber { get; set; }
+        public string? ImagePath {  get; set; }
+        public string? SignaturePath { get; set; }
 
     }
 }
