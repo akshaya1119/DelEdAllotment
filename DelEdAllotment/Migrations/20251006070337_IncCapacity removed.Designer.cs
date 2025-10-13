@@ -4,6 +4,7 @@ using DelEdAllotment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DelEdAllotment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251006070337_IncCapacity removed")]
+    partial class IncCapacityremoved
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,9 +47,6 @@ namespace DelEdAllotment.Migrations
 
                     MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("CentreName"), "utf8mb4");
 
-                    b.Property<string>("CentreTableSession")
-                        .HasColumnType("longtext");
-
                     b.Property<int>("CityCode")
                         .HasColumnType("int");
 
@@ -57,9 +57,6 @@ namespace DelEdAllotment.Migrations
                         .UseCollation("utf8mb4_unicode_ci");
 
                     MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("CityName"), "utf8mb4");
-
-                    b.Property<int?>("IncreasedCapacity")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -157,9 +154,6 @@ namespace DelEdAllotment.Migrations
 
                     b.Property<int?>("RollNumber")
                         .HasColumnType("int");
-
-                    b.Property<string>("Session")
-                        .HasColumnType("longtext");
 
                     b.Property<string>("SignaturePath")
                         .HasColumnType("longtext");

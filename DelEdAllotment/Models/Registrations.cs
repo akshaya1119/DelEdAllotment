@@ -39,5 +39,7 @@ namespace DelEdAllotment.Models
         public string? ImagePath {  get; set; }
         public string? SignaturePath { get; set; }
 
+        public string? Session {  get; set; }
+
     }
 }

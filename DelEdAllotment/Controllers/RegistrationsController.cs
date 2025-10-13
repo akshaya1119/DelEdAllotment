@@ -105,18 +105,21 @@ namespace DelEdAllotment.Controllers
 
         // 🔥 NEW API: Allocate Centres
         [HttpPost("allocate-centres")]
-        public async Task<IActionResult> AllocateCentres()
+        public async Task<IActionResult> AllocateCentres([FromQuery] string session)
         {
             try
             {
                 // Load registrations sorted
                 var registrations = await _context.Registration
+                    .Where(r=> r.Session == session)
                     .OrderBy(r => r.Name)
                     .ThenBy(r => r.DOB)
                     .ThenBy(r => r.RegistrationNo)
                     .ToListAsync();
 
-                var centres = await _context.Centre.ToListAsync();
+                var centres = await _context.Centre
+                    .Where(c => c.CentreTableSession == session)
+                    .ToListAsync();
 
                 // Track current fills (not touching DB directly)
                 var centreCounts = centres.ToDictionary(c => c.Id, c => 0);
@@ -178,12 +181,13 @@ namespace DelEdAllotment.Controllers
 
         //// 🔥 NEW API: Allocate Roll Numbers
         [HttpPost("allocate-rollnumbers")]
-        public async Task<IActionResult> AllocateRollNumbers()
+        public async Task<IActionResult> AllocateRollNumbers([FromQuery] string session)
         {
             try
             {
                 // Load registrations sorted by Name then DOB
                 var registrations = await _context.Registration
+                    .Where(r => r.Session == session)
                     .OrderBy(r => r.Name)
                     .ThenBy(r => r.DOB)
                     .ThenBy(r => r.RegistrationNo)
