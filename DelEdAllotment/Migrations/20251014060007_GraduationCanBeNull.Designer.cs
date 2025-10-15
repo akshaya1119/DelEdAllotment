@@ -4,6 +4,7 @@ using DelEdAllotment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DelEdAllotment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251014060007_GraduationCanBeNull")]
+    partial class GraduationCanBeNull
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,9 +47,6 @@ namespace DelEdAllotment.Migrations
 
                     MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("CentreName"), "utf8mb4");
 
-                    b.Property<string>("CentreNameHindi")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("CentreTableSession")
                         .HasColumnType("longtext");
 
@@ -60,9 +60,6 @@ namespace DelEdAllotment.Migrations
                         .UseCollation("utf8mb4_unicode_ci");
 
                     MySqlPropertyBuilderExtensions.HasCharSet(b.Property<string>("CityName"), "utf8mb4");
-
-                    b.Property<string>("CityNameHindi")
-                        .HasColumnType("longtext");
 
                     b.Property<int?>("IncreasedCapacity")
                         .HasColumnType("int");

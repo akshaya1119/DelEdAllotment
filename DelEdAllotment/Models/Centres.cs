@@ -12,6 +12,9 @@ namespace DelEdAllotment.Models
         public string CityName { get; set; }
         public int CentreCode { get; set; }
         public string CentreName { get; set;}
+
+        public string? CentreNameHindi { get; set; }
+        public string? CityNameHindi { get; set; }
         public int Capacity { get; set; }
         public int? IncreasedCapacity { get; set; }
         public string? CentreTableSession {  get; set; }

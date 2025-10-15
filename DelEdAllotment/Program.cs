@@ -1,27 +1,66 @@
-using DelEdAllotment.Data;
+﻿using DelEdAllotment.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using OfficeOpenXml;
-using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure database context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-// Add services to the container.
+// CORS configuration to allow specific origins
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policyBuilder =>
+        {
+            policyBuilder.AllowAnyOrigin() // React front-end running on localhost
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+                    
+        });
+});
 
+// Add services for controllers
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Add JWT Authentication (if you're using JWT tokens for securing your API)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Example: "https://yourdomain.com"
+            ValidAudience = builder.Configuration["Jwt:Audience"], // Example: "https://yourdomain.com"
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"])) // Your secret key
+        };
+    });
+
+// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Use the CORS policy
+app.UseCors();
+
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(@"Z:\ApplicationsData\DELED2021-22\photos")),
+    RequestPath = "/static"
+});
+
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -29,8 +68,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors();
+
+// Enable Authentication & Authorization (for JWT authentication)
+
+app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllers();
 

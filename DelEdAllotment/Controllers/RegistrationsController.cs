@@ -103,6 +103,83 @@ namespace DelEdAllotment.Controllers
             return _context.Registration.Any(e => e.Id == id);
         }
 
+        [HttpGet("get-registration-details/{registrationNo}")]
+        public async Task<ActionResult<object>> GetRegistrationDetailsByRegNo(string registrationNo)
+        {
+            try
+            {
+                // Hardcoded session value
+                string session = "2021-22";
+
+                // Parse the registrationNo from string to int
+                if (!int.TryParse(registrationNo, out int regNo))
+                {
+                    return BadRequest(new { message = "Invalid registration number format." });
+                }
+
+                // Load the registration for the given registration number and session
+                var reg = await _context.Registration
+                    .FirstOrDefaultAsync(r => r.RegistrationNo == regNo && r.Session == session);
+
+                if (reg == null)
+                {
+                    return NotFound(new { message = "Registration not found for the given registration number." });
+                }
+
+                // Load the centres for the given session
+                var centres = await _context.Centre
+                    .Where(c => c.CentreTableSession == session)
+                    .ToListAsync();
+
+                // Extract CityCode and CentreCode from AssignedCentre
+                int assignedCentre = reg.AssignedCentre ?? 0; // Handle null value for AssignedCentre
+                int cityCode = assignedCentre / 100; // Extract city code (first 2 digits)
+                int centreCode = assignedCentre % 100; // Extract centre code (last 2 digits)
+
+                // Find the matching centre from the centres list
+                var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
+
+                // Prepare the result object
+                var registrationDetails = new
+                {
+                    reg.Name,
+                    reg.FName,
+                    reg.Gender,
+                    reg.Category,
+                    reg.DOB,
+                    reg.Address,
+                    reg.RollNumber,
+                    reg.PhotoId,
+                    reg.Ph,
+                    reg.PhType,
+                    reg.ImagePath,
+                    reg.SubCategory,
+                    reg.SignaturePath,
+                    AssignedCentre = centre != null ? new
+                    {
+                        CityCode = centre.CityCode,
+                        CityName = centre.CityNameHindi,
+                        CentreCode = centre.CentreCode,
+                        CentreName = centre.CentreNameHindi
+                    } : (object)null
+                };
+
+                return Ok(registrationDetails);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Error fetching registration details", details = ex.Message });
+            }
+        }
+
+
+
+
+
+
+
+
         // 🔥 NEW API: Allocate Centres
         [HttpPost("allocate-centres")]
         public async Task<IActionResult> AllocateCentres([FromQuery] string session)
@@ -207,7 +284,7 @@ namespace DelEdAllotment.Controllers
                     int serial = 1;
                     foreach (var reg in group.Value)
                     {
-                        string yearPart = "23";
+                        string yearPart = "21";
                         //string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // "25"
                         string cityPart = cityCode.ToString("D2"); // 2 digits
                         string centrePart = centreCode.ToString("D2"); // 2 digits

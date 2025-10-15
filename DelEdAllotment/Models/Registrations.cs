@@ -22,7 +22,7 @@ namespace DelEdAllotment.Models
         public string Ph {  get; set; }
         public int PreferredCityCode { get; set; }
         public int Centre2 { get; set; }
-        public string Graduation {  get; set; }
+        public string? Graduation {  get; set; }
         public DateTime GraduationDate { get; set; }
         public string PhotoId { get; set; }
 
