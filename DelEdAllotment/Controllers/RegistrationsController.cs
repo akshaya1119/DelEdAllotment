@@ -103,43 +103,121 @@ namespace DelEdAllotment.Controllers
             return _context.Registration.Any(e => e.Id == id);
         }
 
+        //[HttpGet("get-registration-details/{registrationNo}")]
+        //public async Task<ActionResult<object>> GetRegistrationDetailsByRegNo(string registrationNo)
+        //{
+        //    try
+        //    {
+        //        // Hardcoded session value
+        //        string session = "2021-22";
+
+        //        // Parse the registrationNo from string to int
+        //        if (!int.TryParse(registrationNo, out int regNo))
+        //        {
+        //            return BadRequest(new { message = "Invalid registration number format." });
+        //        }
+
+        //        // Load the registration for the given registration number and session
+        //        var reg = await _context.Registration
+        //            .FirstOrDefaultAsync(r => r.RegistrationNo == regNo && r.Session == session);
+
+        //        if (reg == null)
+        //        {
+        //            return NotFound(new { message = "Registration not found for the given registration number." });
+        //        }
+
+        //        // Load the centres for the given session
+        //        var centres = await _context.Centre
+        //            .Where(c => c.CentreTableSession == session)
+        //            .ToListAsync();
+
+        //        // Extract CityCode and CentreCode from AssignedCentre
+        //        int assignedCentre = reg.AssignedCentre ?? 0; // Handle null value for AssignedCentre
+        //        int cityCode = assignedCentre / 100; // Extract city code (first 2 digits)
+        //        int centreCode = assignedCentre % 100; // Extract centre code (last 2 digits)
+
+        //        // Find the matching centre from the centres list
+        //        var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
+
+        //        // Prepare the result object
+        //        var registrationDetails = new
+        //        {
+        //            reg.Name,
+        //            reg.FName,
+        //            reg.Gender,
+        //            reg.Category,
+        //            reg.DOB,
+        //            reg.Address,
+        //            reg.RollNumber,
+        //            reg.PhotoId,
+        //            reg.Ph,
+        //            reg.PhType,
+        //            reg.ImagePath,
+        //            reg.SubCategory,
+        //            reg.SignaturePath,
+        //            AssignedCentre = centre != null ? new
+        //            {
+        //                CityCode = centre.CityCode,
+        //                CityName = centre.CityNameHindi,
+        //                CentreCode = centre.CentreCode,
+        //                CentreName = centre.CentreNameHindi
+        //            } : (object)null
+        //        };
+
+        //        return Ok(registrationDetails);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error fetching registration details", details = ex.Message });
+        //    }
+        //}
+
+
+
+
         [HttpGet("get-registration-details/{registrationNo}")]
         public async Task<ActionResult<object>> GetRegistrationDetailsByRegNo(string registrationNo)
         {
             try
             {
-                // Hardcoded session value
                 string session = "2021-22";
 
-                // Parse the registrationNo from string to int
                 if (!int.TryParse(registrationNo, out int regNo))
-                {
                     return BadRequest(new { message = "Invalid registration number format." });
-                }
 
-                // Load the registration for the given registration number and session
                 var reg = await _context.Registration
                     .FirstOrDefaultAsync(r => r.RegistrationNo == regNo && r.Session == session);
 
                 if (reg == null)
-                {
-                    return NotFound(new { message = "Registration not found for the given registration number." });
-                }
+                    return NotFound(new { message = "Registration not found." });
 
-                // Load the centres for the given session
                 var centres = await _context.Centre
                     .Where(c => c.CentreTableSession == session)
                     .ToListAsync();
 
-                // Extract CityCode and CentreCode from AssignedCentre
-                int assignedCentre = reg.AssignedCentre ?? 0; // Handle null value for AssignedCentre
-                int cityCode = assignedCentre / 100; // Extract city code (first 2 digits)
-                int centreCode = assignedCentre % 100; // Extract centre code (last 2 digits)
+                int assignedCentre = reg.AssignedCentre ?? 0;
+                int cityCode = assignedCentre / 100;
+                int centreCode = assignedCentre % 100;
 
-                // Find the matching centre from the centres list
                 var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
 
-                // Prepare the result object
+                // --- Convert images to Base64 ---
+                string imageBase64 = null;
+                string signatureBase64 = null;
+
+                if (!string.IsNullOrEmpty(reg.ImagePath) && System.IO.File.Exists(reg.ImagePath))
+                {
+                    byte[] imageBytes = await System.IO.File.ReadAllBytesAsync(reg.ImagePath);
+                    imageBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
+                }
+
+                if (!string.IsNullOrEmpty(reg.SignaturePath) && System.IO.File.Exists(reg.SignaturePath))
+                {
+                    byte[] signBytes = await System.IO.File.ReadAllBytesAsync(reg.SignaturePath);
+                    signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(signBytes)}";
+                }
+
                 var registrationDetails = new
                 {
                     reg.Name,
@@ -152,9 +230,9 @@ namespace DelEdAllotment.Controllers
                     reg.PhotoId,
                     reg.Ph,
                     reg.PhType,
-                    reg.ImagePath,
+                    ImagePath = imageBase64,
+                    SignaturePath = signatureBase64,
                     reg.SubCategory,
-                    reg.SignaturePath,
                     AssignedCentre = centre != null ? new
                     {
                         CityCode = centre.CityCode,
@@ -172,10 +250,6 @@ namespace DelEdAllotment.Controllers
                     new { message = "Error fetching registration details", details = ex.Message });
             }
         }
-
-
-
-
 
 
 
