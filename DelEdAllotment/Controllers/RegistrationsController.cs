@@ -180,6 +180,86 @@ namespace DelEdAllotment.Controllers
 
 
 
+        [HttpGet("get-registration-batch")]
+        public async Task<ActionResult<object>> GetRegistrationBatch(int start = 0, int size = 1000)
+        {
+            try
+            {
+                string session = "2021-22";
+
+                // Get ordered registrations for the session
+                var registrations = await _context.Registration
+                    .Where(r => r.Session == session)
+                    .OrderBy(r => r.RegistrationNo)
+                    .Skip(start)
+                    .Take(size)
+                    .ToListAsync();
+
+                if (!registrations.Any())
+                    return Ok(new object[0]); // return empty array if no data
+
+                var centres = await _context.Centre
+                    .Where(c => c.CentreTableSession == session)
+                    .ToListAsync();
+
+                var registrationDetails = new List<object>();
+
+                foreach (var reg in registrations)
+                {
+                    int assignedCentre = reg.AssignedCentre ?? 0;
+                    int cityCode = assignedCentre / 100;
+                    int centreCode = assignedCentre % 100;
+
+                    var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
+
+                    string imageBase64 = null;
+                    string signatureBase64 = null;
+
+                    if (!string.IsNullOrEmpty(reg.ImagePath) && System.IO.File.Exists(reg.ImagePath))
+                    {
+                        byte[] imageBytes = await System.IO.File.ReadAllBytesAsync(reg.ImagePath);
+                        imageBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
+                    }
+
+                    if (!string.IsNullOrEmpty(reg.SignaturePath) && System.IO.File.Exists(reg.SignaturePath))
+                    {
+                        byte[] signBytes = await System.IO.File.ReadAllBytesAsync(reg.SignaturePath);
+                        signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(signBytes)}";
+                    }
+
+                    registrationDetails.Add(new
+                    {
+                        reg.Name,
+                        reg.FName,
+                        reg.Gender,
+                        reg.Category,
+                        reg.DOB,
+                        reg.Address,
+                        reg.RollNumber,
+                        reg.PhotoId,
+                        reg.Ph,
+                        reg.PhType,
+                        ImagePath = imageBase64,
+                        SignaturePath = signatureBase64,
+                        reg.SubCategory,
+                        AssignedCentre = centre != null ? new
+                        {
+                            CityCode = centre.CityCode,
+                            CityName = centre.CityNameHindi,
+                            CentreCode = centre.CentreCode,
+                            CentreName = centre.CentreNameHindi
+                        } : (object)null
+                    });
+                }
+
+                return Ok(registrationDetails);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Error fetching registration batch", details = ex.Message });
+            }
+        }
 
 
 
