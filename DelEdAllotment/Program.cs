@@ -27,7 +27,6 @@ builder.Services.AddCors(options =>
 
 // Add services for controllers
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
 
 // Add JWT Authentication (if you're using JWT tokens for securing your API)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -55,17 +54,9 @@ var app = builder.Build();
 app.UseCors();
 
 
-//app.UseStaticFiles(new StaticFileOptions
-//{
-//    FileProvider = new PhysicalFileProvider(Path.Combine(@"Z:\ApplicationsData\DELED2021-22\photos")),
-//    RequestPath = "/static"
-//});
-
-app.UseStaticFiles();
-
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(@"D:\ApplicationsData\DELED2021-22\photos")),
+    FileProvider = new PhysicalFileProvider(Path.Combine(@"Z:\ApplicationsData\DELED2021-22\photos")),
     RequestPath = "/static"
 });
 
@@ -86,6 +77,5 @@ app.UseAuthorization();
 
 
 app.MapControllers();
-app.MapRazorPages();
 
 app.Run();
