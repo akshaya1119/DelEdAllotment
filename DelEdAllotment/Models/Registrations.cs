@@ -27,7 +27,7 @@ namespace DelEdAllotment.Models
         public string PhotoId { get; set; }
 
         public string? SubCategory { get; set; }
-        public string HomeDistrict { get; set; }
+        public string? HomeDistrict { get; set; }
         public string? PhType { get; set; }
         public int? FeeAmount { get; set; }
         public long? TransactionId { get; set; }
@@ -40,6 +40,9 @@ namespace DelEdAllotment.Models
         public string? SignaturePath { get; set; }
 
         public string? Session {  get; set; }
+        public string? Scribe { get; set; }
+        public string? University { get; set; }
+        public DateTime? TransactionDate { get; set; }
 
     }
 }
