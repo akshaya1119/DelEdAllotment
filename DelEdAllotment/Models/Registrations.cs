@@ -43,6 +43,11 @@ namespace DelEdAllotment.Models
         public string? Scribe { get; set; }
         public string? University { get; set; }
         public DateTime? TransactionDate { get; set; }
+        public int? AssignedCity {  get; set; }
+
+        public int? RoomNumber { get; set; }
+
+        public int? AssignedBoth { get; set; }
 
     }
 }

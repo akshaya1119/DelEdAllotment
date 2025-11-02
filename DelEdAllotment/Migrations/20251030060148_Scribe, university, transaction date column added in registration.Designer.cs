@@ -4,6 +4,7 @@ using DelEdAllotment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DelEdAllotment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030060148_Scribe, university, transaction date column added in registration")]
+    partial class Scribeuniversitytransactiondatecolumnaddedinregistration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,9 +70,6 @@ namespace DelEdAllotment.Migrations
                     b.Property<int?>("IncreasedCapacity")
                         .HasColumnType("int");
 
-                    b.Property<int?>("utilisedSeat")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("Centre");
@@ -87,9 +87,6 @@ namespace DelEdAllotment.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<int?>("AssignedCentre")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AssignedCity")
                         .HasColumnType("int");
 
                     b.Property<string>("Category")
@@ -168,9 +165,6 @@ namespace DelEdAllotment.Migrations
                     b.Property<int?>("RollNumber")
                         .HasColumnType("int");
 
-                    b.Property<int?>("RoomNumber")
-                        .HasColumnType("int");
-
                     b.Property<string>("Scribe")
                         .HasColumnType("longtext");
 
@@ -199,75 +193,6 @@ namespace DelEdAllotment.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Registration");
-                });
-
-            modelBuilder.Entity("DelEdAllotment.Models.Room", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CentreCode")
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("CityCode")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RoomCapacity")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RoomNo")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("DelEdAllotment.Models.Seat_Allotment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("allotment_date")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("center_code")
-                        .HasColumnType("int");
-
-                    b.Property<string>("center_id")
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("city_code")
-                        .HasColumnType("int");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("registration_no")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("roll_no")
-                        .HasColumnType("int");
-
-                    b.Property<int>("room_number")
-                        .HasColumnType("int");
-
-                    b.Property<int>("seat_number")
-                        .HasColumnType("int");
-
-                    b.Property<int>("seat_row")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("seat_allotments");
                 });
 #pragma warning restore 612, 618
         }

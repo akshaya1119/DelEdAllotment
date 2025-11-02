@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using DelEdAllotment.Data;
+using DelEdAllotment.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using DelEdAllotment.Data;
-using DelEdAllotment.Models;
+using Newtonsoft.Json.Linq;
+using NuGet.Packaging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace DelEdAllotment.Controllers
 {
@@ -16,6 +20,7 @@ namespace DelEdAllotment.Controllers
     {
         private readonly AppDbContext _context;
 
+        private static Dictionary<int, int> CityCapacityTracker = new Dictionary<int, int>();
         public RegistrationsController(AppDbContext context)
         {
             _context = context;
@@ -263,17 +268,140 @@ namespace DelEdAllotment.Controllers
 
 
 
-
-
         // 🔥 NEW API: Allocate Centres
-        [HttpPost("allocate-centres")]
-        public async Task<IActionResult> AllocateCentres([FromQuery] string session)
+        //[HttpPost("allocate-centres")]
+        //public async Task<IActionResult> AllocateCentres([FromQuery] string session)
+        //{
+        //    try
+        //    {
+        //        // Load registrations sorted
+        //        var registrations = await _context.Registration
+        //            .Where(r => r.Session == session)
+        //            .OrderBy(r => r.Name)
+        //            .ThenBy(r => r.DOB)
+        //            .ThenBy(r => r.RegistrationNo)
+        //            .ToListAsync();
+
+        //        var centres = await _context.Centre
+        //            .Where(c => c.CentreTableSession == session)
+        //            .ToListAsync();
+
+        //        // Track current fills (not touching DB directly)
+        //        var centreCounts = centres.ToDictionary(c => c.Id, c => 0);
+
+        //        foreach (var reg in registrations)
+        //        {
+        //            var preferredCity = reg.PreferredCityCode;
+
+        //            // Get all centres in the preferred city, except nodal
+        //            var cityCentres = centres
+        //                .Where(c => c.CityCode == preferredCity && c.CentreCode != 1)
+        //                .OrderBy(c => c.CentreCode)
+        //                .ToList();
+
+        //            var assigned = false;
+
+        //            // Try normal centres
+        //            foreach (var centre in cityCentres)
+        //            {
+        //                if (centreCounts[centre.Id] < centre.Capacity)
+        //                {
+        //                    reg.AssignedCentre = (centre.CityCode * 100) + centre.CentreCode; ; // 👈 Save CityCode
+        //                    centreCounts[centre.Id]++;
+        //                    assigned = true;
+        //                    break;
+        //                }
+        //            }
+
+        //            // If not possible, assign nodal
+        //            if (!assigned)
+        //            {
+        //                var nodalCentre = centres
+        //                    .FirstOrDefault(c => c.CityCode == preferredCity && c.CentreCode == 1);
+
+        //                if (nodalCentre != null)
+        //                {
+        //                    reg.AssignedCentre = (nodalCentre.CityCode * 100) + nodalCentre.CentreCode; // 👈 Still CityCode
+        //                    centreCounts[nodalCentre.Id]++;
+
+        //                    // Increase nodal capacity if overflow
+        //                    if (centreCounts[nodalCentre.Id] > nodalCentre.Capacity)
+        //                    {
+        //                        nodalCentre.IncreasedCapacity =
+        //                            centreCounts[nodalCentre.Id] - nodalCentre.Capacity;
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        await _context.SaveChangesAsync();
+        //        return Ok(new { message = "Centres allocated successfully" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error during centre allocation", details = ex.Message });
+        //    }
+        //}
+
+        //// 🔥 NEW API: Allocate Roll Numbers
+        //[HttpPost("allocate-rollnumbers")]
+        //public async Task<IActionResult> AllocateRollNumbers([FromQuery] string session)
+        //{
+        //    try
+        //    {
+        //        // Load registrations sorted by Name then DOB
+        //        var registrations = await _context.Registration
+        //            .Where(r => r.Session == session)
+        //            .OrderBy(r => r.Name)
+        //            .ThenBy(r => r.DOB)
+        //            .ThenBy(r => r.RegistrationNo)
+        //            .ToListAsync();
+
+        //        // Group by AssignedCentre
+        //        var groupedByCentre = registrations
+        //            .GroupBy(r => r.AssignedCentre)
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        foreach (var group in groupedByCentre)
+        //        {
+        //            var assignedCentre = group.Key; // e.g., 1, 102, 1306
+        //            int cityCode = assignedCentre.Value / 100;  // 1 for 102 or 13 for 1306
+        //            int centreCode = assignedCentre.Value % 100; // 2 for 102 or 6 for 1306
+
+        //            int serial = 1;
+        //            foreach (var reg in group.Value)
+        //            {
+        //                string yearPart = "21";
+        //                //string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // "25"
+        //                string cityPart = cityCode.ToString("D2"); // 2 digits
+        //                string centrePart = centreCode.ToString("D2"); // 2 digits
+        //                string serialPart = serial.ToString("D3"); // 3 digits
+
+        //                reg.RollNumber = int.Parse($"{yearPart}{cityPart}{centrePart}{serialPart}");
+        //                serial++;
+        //            }
+        //        }
+
+        //        await _context.SaveChangesAsync();
+        //        return Ok(new { message = "Roll numbers allocated successfully" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error during roll number allocation", details = ex.Message });
+        //    }
+        //}
+
+
+        [HttpPost("allocate-cities")]
+        public async Task<IActionResult> AllocateCities([FromQuery] string session)
         {
             try
             {
                 // Load registrations sorted
                 var registrations = await _context.Registration
-                    .Where(r=> r.Session == session)
+                    .Where(r => r.Session == session)
                     .OrderBy(r => r.Name)
                     .ThenBy(r => r.DOB)
                     .ThenBy(r => r.RegistrationNo)
@@ -283,114 +411,1198 @@ namespace DelEdAllotment.Controllers
                     .Where(c => c.CentreTableSession == session)
                     .ToListAsync();
 
-                // Track current fills (not touching DB directly)
-                var centreCounts = centres.ToDictionary(c => c.Id, c => 0);
+                // Group centres by city for capacity calculations
+                var centresByCity = centres
+                    .GroupBy(c => c.CityCode)
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
-                foreach (var reg in registrations)
+                // Group registrations by preferred city
+                var registrationsByCity = registrations
+                    .GroupBy(r => r.PreferredCityCode)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // Process city by city
+                foreach (var cityGroup in registrationsByCity)
                 {
-                    var preferredCity = reg.PreferredCityCode;
+                    var cityCode = cityGroup.Key;
+                    var cityRegistrations = cityGroup.Value;
 
-                    // Get all centres in the preferred city, except nodal
-                    var cityCentres = centres
-                        .Where(c => c.CityCode == preferredCity && c.CentreCode != 1)
-                        .OrderBy(c => c.CentreCode)
-                        .ToList();
+                    // Total capacity for all centres in that city
+                    if (!centresByCity.TryGetValue(cityCode, out var cityCentres))
+                        continue; // Skip if city has no centres configured
 
-                    var assigned = false;
+                    var totalCityCapacity = cityCentres.Sum(c => c.Capacity);
+                    var totalCandidates = cityRegistrations.Count;
 
-                    // Try normal centres
-                    foreach (var centre in cityCentres)
+                    // Assign the city to each candidate
+                    foreach (var reg in cityRegistrations)
                     {
-                        if (centreCounts[centre.Id] < centre.Capacity)
-                        {
-                            reg.AssignedCentre = (centre.CityCode * 100) + centre.CentreCode; ; // 👈 Save CityCode
-                            centreCounts[centre.Id]++;
-                            assigned = true;
-                            break;
-                        }
+                        reg.AssignedCity = cityCode;
                     }
 
-                    // If not possible, assign nodal
-                    if (!assigned)
+                    // Handle nodal centre capacity increase (only if needed)
+                    var nodalCentre = cityCentres.FirstOrDefault(c => c.CentreCode == 1);
+                    if (nodalCentre != null)
                     {
-                        var nodalCentre = centres
-                            .FirstOrDefault(c => c.CityCode == preferredCity && c.CentreCode == 1);
-
-                        if (nodalCentre != null)
+                        if (totalCandidates > totalCityCapacity)
                         {
-                            reg.AssignedCentre = (nodalCentre.CityCode * 100) + nodalCentre.CentreCode; // 👈 Still CityCode
-                            centreCounts[nodalCentre.Id]++;
-
-                            // Increase nodal capacity if overflow
-                            if (centreCounts[nodalCentre.Id] > nodalCentre.Capacity)
-                            {
-                                nodalCentre.IncreasedCapacity =
-                                    centreCounts[nodalCentre.Id] - nodalCentre.Capacity;
-                            }
+                            // Overflow amount
+                            nodalCentre.IncreasedCapacity = totalCandidates - totalCityCapacity;
+                        }
+                        else
+                        {
+                            nodalCentre.IncreasedCapacity = 0; // reset if not needed
                         }
                     }
                 }
 
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Centres allocated successfully" });
+
+                return Ok(new { message = "Cities allocated successfully" });
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "Error during centre allocation", details = ex.Message });
+                    new { message = "Error during city allocation", details = ex.Message });
             }
         }
 
-        //// 🔥 NEW API: Allocate Roll Numbers
-        [HttpPost("allocate-rollnumbers")]
-        public async Task<IActionResult> AllocateRollNumbers([FromQuery] string session)
+        //[HttpPost("allocate-centres-balanced")]
+        //public async Task<IActionResult> AllocateCentresBalanced([FromQuery] string session)
+        //{
+        //    try
+        //    {
+        //        // 1️⃣ Load data
+        //        var registrations = await _context.Registration
+        //            .Where(r => r.Session == session && r.AssignedCity != null)
+        //            .OrderBy(r => r.Name)
+        //            .ToListAsync();
+
+        //        var centres = await _context.Centre
+        //            .Where(c => c.CentreTableSession == session)
+        //            .ToListAsync();
+
+        //        // 2️⃣ Group by city
+        //        var centresByCity = centres
+        //            .GroupBy(c => c.CityCode)
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        var regsByCity = registrations
+        //            .GroupBy(r => r.AssignedCity)
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        // 3️⃣ Process each city
+        //        foreach (var cityGroup in regsByCity)
+        //        {
+        //            var cityCode = cityGroup.Key ?? 0;
+        //            var cityRegs = cityGroup.Value;
+
+        //            if (!centresByCity.TryGetValue(cityCode, out var cityCentres))
+        //                continue;
+
+        //            // Separate normal and nodal centres
+        //            var normalCentres = cityCentres
+        //                .Where(c => c.CentreCode != 1)
+        //                .OrderBy(c => c.CentreCode)
+        //                .ToList();
+
+        //            var nodalCentre = cityCentres
+        //                .FirstOrDefault(c => c.CentreCode == 1);
+
+        //            // Track capacity usage
+        //            var totalCapacity = cityCentres.ToDictionary(
+        //                c => c.Id,
+        //                c => c.Capacity + (c.IncreasedCapacity ?? 0)
+        //            );
+
+        //            var usedSeats = cityCentres.ToDictionary(c => c.Id, c => 0);
+
+        //            // 4️⃣ Group candidates by first letter for balance
+        //            var letterGroups = cityRegs
+        //                .GroupBy(r => char.ToUpper(r.Name.FirstOrDefault()))
+        //                .OrderBy(g => g.Key)
+        //                .ToList();
+
+        //            // 5️⃣ Assign only to normal centres first
+        //            var centreIndex = 0;
+        //            foreach (var letterGroup in letterGroups)
+        //            {
+        //                foreach (var reg in letterGroup)
+        //                {
+        //                    bool assigned = false;
+        //                    int attempts = 0;
+
+        //                    // Try to place into normal centres first
+        //                    while (!assigned && attempts < normalCentres.Count)
+        //                    {
+        //                        var centre = normalCentres[centreIndex];
+        //                        if (usedSeats[centre.Id] < totalCapacity[centre.Id])
+        //                        {
+        //                            reg.AssignedCentre = (centre.CityCode * 100) + centre.CentreCode;
+        //                            reg.AssignedCity = centre.CityCode;
+        //                            usedSeats[centre.Id]++;
+        //                            assigned = true;
+        //                        }
+
+        //                        // Move in round-robin
+        //                        centreIndex = (centreIndex + 1) % normalCentres.Count;
+        //                        attempts++;
+        //                    }
+
+        //                    // If not assigned (normal centres full), go to nodal
+        //                    if (!assigned && nodalCentre != null)
+        //                    {
+        //                        if (usedSeats[nodalCentre.Id] < totalCapacity[nodalCentre.Id])
+        //                        {
+        //                            reg.AssignedCentre = (nodalCentre.CityCode * 100) + nodalCentre.CentreCode;
+        //                            reg.AssignedCity = nodalCentre.CityCode;
+        //                            usedSeats[nodalCentre.Id]++;
+        //                            assigned = true;
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            // 6️⃣ Update utilisedSeat
+        //            foreach (var c in cityCentres)
+        //            {
+        //                c.utilisedSeat = usedSeats[c.Id];
+        //            }
+        //        }
+
+        //        // 7️⃣ Save changes
+        //        await _context.SaveChangesAsync();
+
+        //        return Ok(new { message = "Centres allocated successfully — all non-nodal centres filled first, balanced by first letter." });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error during centre allocation", details = ex.Message });
+        //    }
+        //}
+
+
+
+        // Create rooms for centres
+
+
+
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateRoomsForCentres([FromQuery] string session)
         {
             try
             {
-                // Load registrations sorted by Name then DOB
-                var registrations = await _context.Registration
-                    .Where(r => r.Session == session)
-                    .OrderBy(r => r.Name)
-                    .ThenBy(r => r.DOB)
-                    .ThenBy(r => r.RegistrationNo)
+                if (string.IsNullOrEmpty(session))
+                {
+                    return BadRequest(new { message = "Session is required." });
+                }
+
+                // Filter centres by the session (e.g., "2025-26")
+                var centres = await _context.Centre
+                    .Where(c => c.CentreTableSession == session)  // Filter by session
                     .ToListAsync();
 
-                // Group by AssignedCentre
-                var groupedByCentre = registrations
-                    .GroupBy(r => r.AssignedCentre)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                foreach (var group in groupedByCentre)
+                if (centres == null || !centres.Any())
                 {
-                    var assignedCentre = group.Key; // e.g., 1, 102, 1306
-                    int cityCode = assignedCentre.Value / 100;  // 1 for 102 or 13 for 1306
-                    int centreCode = assignedCentre.Value % 100; // 2 for 102 or 6 for 1306
+                    return NotFound(new { message = $"No centres found for the session {session}." });
+                }
 
-                    int serial = 1;
-                    foreach (var reg in group.Value)
+                List<Room> newRooms = new List<Room>();
+
+                // Loop through each centre to calculate and create rooms
+                foreach (var centre in centres)
+                {
+                    int totalCapacity = centre.Capacity + (centre.IncreasedCapacity ?? 0); // Total capacity
+                    int fullRooms = totalCapacity / 24;  // Number of full rooms
+                    int remainingSeats = totalCapacity % 24;  // Remaining seats for an additional room
+
+                    // Create full rooms
+                    for (int i = 1; i <= fullRooms; i++)
                     {
-                        string yearPart = "21";
-                        //string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // "25"
-                        string cityPart = cityCode.ToString("D2"); // 2 digits
-                        string centrePart = centreCode.ToString("D2"); // 2 digits
-                        string serialPart = serial.ToString("D3"); // 3 digits
+                        var room = new Room
+                        {
+                            CityCode = centre.CityCode,
+                            CentreCode = centre.CentreCode.ToString(),  // CentreCode as string (e.g. '1')
+                            RoomNo = i,
+                            RoomCapacity = 24  // Full room capacity
+                        };
+                        newRooms.Add(room);
+                        _context.Rooms.Add(room);  // Add to context for saving
+                    }
 
-                        reg.RollNumber = int.Parse($"{yearPart}{cityPart}{centrePart}{serialPart}");
-                        serial++;
+                    // If there are remaining seats, create an additional room
+                    if (remainingSeats > 0)
+                    {
+                        var room = new Room
+                        {
+                            CityCode = centre.CityCode,
+                            CentreCode = centre.CentreCode.ToString(),  // CentreCode as string (e.g. '1')
+                            RoomNo = fullRooms + 1,  // Next room number
+                            RoomCapacity = remainingSeats  // Remaining seats
+                        };
+                        newRooms.Add(room);
+                        _context.Rooms.Add(room);  // Add to context for saving
                     }
                 }
 
+                // Save changes to the database
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Roll numbers allocated successfully" });
+
+                return Ok(new { message = "Rooms created successfully for all centres." });
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "Error during roll number allocation", details = ex.Message });
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Error occurred while creating rooms",
+                    details = ex.Message
+                });
             }
         }
 
+
+
+        //[HttpPost("assign-rooms-balanced")]
+        //public async Task<IActionResult> AssignRoomsBalanced([FromQuery] string session)
+        //{
+        //    try
+        //    {
+        //        // 1️⃣ Load all relevant registrations (City=26, Centre=9)
+        //        var registrations = await _context.Registration
+        //            .Where(r => r.Session == session && r.AssignedCentre == 1201)
+        //            .OrderBy(r => r.Name)
+        //            .ToListAsync();
+
+        //        // 2️⃣ Load all rooms for that city-centre
+        //        var rooms = await _context.Rooms
+        //            .Where(r => r.CityCode == 12 && r.CentreCode == "1")
+        //            .OrderBy(r => r.RoomNo)
+        //            .ToListAsync();
+
+        //        if (!registrations.Any() || !rooms.Any())
+        //            return BadRequest("No registrations or rooms found for City=26, Centre=9.");
+
+        //        // 3️⃣ Helper class to track room usage
+        //        var roomUsage = rooms.ToDictionary(r => r.RoomNo.Value, r => new RoomTracker(r.RoomCapacity ?? 0));
+
+        //        // 4️⃣ Group candidates by the first letter of their name
+        //        var letterGroups = registrations
+        //            .GroupBy(r => char.ToUpper(r.Name.FirstOrDefault()))
+        //            .OrderByDescending(g => g.Count()) // Start with initials having most candidates
+        //            .ToList();
+
+        //        // 5️⃣ Allocate students by group
+        //        foreach (var group in letterGroups)
+        //        {
+        //            var letter = group.Key;
+        //            var candidates = group.ToList();
+
+        //            foreach (var candidate in candidates)
+        //            {
+        //                bool assigned = false;
+
+        //                // Try to find a suitable room for this candidate
+        //                foreach (var room in rooms)
+        //                {
+        //                    var roomNo = room.RoomNo.Value;
+        //                    var tracker = roomUsage[roomNo];
+
+        //                    // Conditions:
+        //                    //  - Room should not be full
+        //                    //  - Same initial ≤ 12 students in one room
+        //                    if (tracker.Used < tracker.Capacity)
+        //                    {
+        //                        int sameLetterCount = tracker.Assigned.GetValueOrDefault(letter, 0);
+
+        //                        // If this letter already filled 12 seats, skip to next room
+        //                        if (sameLetterCount >= 12)
+        //                            continue;
+
+        //                        // ✅ Assign candidate to this room
+        //                        candidate.RoomNumber = roomNo;
+
+        //                        // Update room tracker
+        //                        tracker.Used++;
+        //                        tracker.Assigned[letter] = sameLetterCount + 1;
+
+        //                        assigned = true;
+        //                        break; // move to next candidate
+        //                    }
+        //                }
+
+        //                // If no room found (very unlikely), you can log it
+        //                if (!assigned)
+        //                {
+        //                    Console.WriteLine($"⚠️ No available room found for {candidate.Name} ({letter}).");
+        //                }
+        //            }
+        //        }
+
+        //        // 6️⃣ Save all assigned room numbers
+        //        await _context.SaveChangesAsync();
+
+        //        return Ok(new { message = "Rooms successfully assigned with balanced initials and capacity limits." });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new
+        //        {
+        //            message = "Error during room allocation",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
+
+        // 🔹 Helper class for room tracking
+        //public class RoomTracker
+        //{
+        //    public int Capacity { get; set; }
+        //    public int Used { get; set; }
+        //    public Dictionary<char, int> Assigned { get; set; }
+
+        //    public RoomTracker(int capacity)
+        //    {
+        //        Capacity = capacity;
+        //        Used = 0;
+        //        Assigned = new Dictionary<char, int>();
+        //    }
+        //}
+
+
+        //[HttpPost("distribute")]
+        //public async Task<IActionResult> DistributeCandidates()
+        //{
+        //    string session = "2025-26";
+
+        //    // Step 1: Get data
+        //    var centres = await _context.Centre
+        //        .Where(c => c.CentreTableSession == session)
+        //        .ToListAsync();
+
+        //    var registrations = await _context.Registration
+        //        .Where(r => r.Session == session)
+        //        .ToListAsync();
+
+        //    // Step 2: Group by city
+        //    var cities = registrations
+        //        .GroupBy(r => r.AssignedCity)
+        //        .ToDictionary(g => g.Key, g => g.ToList());
+
+        //    List<Registrations> updatedRegs = new();
+
+        //    // Step 3: Process each city separately
+        //    foreach (var cityGroup in cities)
+        //    {
+        //        var cityCode = cityGroup.Key;
+        //        var cityRegs = cityGroup.Value;
+
+        //        // Get centers for this city
+        //        var cityCentres = centres
+        //            .Where(c => c.CityCode == cityCode)
+        //            .OrderBy(c => c.CentreCode)
+        //            .ToList();
+
+        //        if (!cityCentres.Any())
+        //            continue;
+
+        //        // Track remaining capacity per center (CentreCode is int)
+        //        var remainingCap = cityCentres.ToDictionary(c => c.CentreCode, c => c.utilisedSeat ?? 0);
+
+        //        // Step 4: Group city registrations by initial letter
+        //        var initials = cityRegs
+        //            .GroupBy(r => r.Name.Substring(0, 1).ToUpper())
+        //            .OrderByDescending(g => g.Count()) // handle high-frequency initials first
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        // Step 5: Distribute initials across centers
+        //        foreach (var initialGroup in initials)
+        //        {
+        //            var initial = initialGroup.Key;
+        //            var candidates = initialGroup.Value;
+        //            int totalCandidates = candidates.Count;
+
+        //            // Get centers with available capacity
+        //            var activeCentres = remainingCap
+        //                .Where(c => c.Value > 0)
+        //                .ToDictionary(c => c.Key, c => c.Value);
+
+        //            if (!activeCentres.Any())
+        //                break; // all centers full
+
+        //            int totalAvailable = activeCentres.Values.Sum();
+
+        //            // Step 5.1: Proportional division by capacity
+        //            var assignments = new Dictionary<int, int>();
+        //            int assigned = 0;
+
+        //            foreach (var kvp in activeCentres)
+        //            {
+        //                int centreCode = kvp.Key;
+        //                int available = kvp.Value;
+
+        //                // proportional assignment by capacity
+        //                int assignCount = (int)Math.Round((double)available / totalAvailable * totalCandidates);
+
+        //                // Ensure not above remaining capacity
+        //                assignCount = Math.Min(assignCount, available);
+
+        //                assignments[centreCode] = assignCount;
+        //                assigned += assignCount;
+        //            }
+
+        //            // Step 5.2: Handle rounding leftovers
+        //            int leftover = totalCandidates - assigned;
+        //            if (leftover > 0)
+        //            {
+        //                var sorted = activeCentres
+        //                    .OrderByDescending(c => c.Value)
+        //                    .Select(c => c.Key)
+        //                    .ToList();
+
+        //                foreach (var code in sorted)
+        //                {
+        //                    if (leftover == 0) break;
+        //                    int already = assignments.ContainsKey(code) ? assignments[code] : 0;
+        //                    int canTake = Math.Min(leftover, remainingCap[code] - already);
+        //                    assignments[code] = already + canTake;
+        //                    leftover -= canTake;
+        //                }
+        //            }
+
+        //            // Step 6: Apply assignments
+        //            int startIndex = 0;
+        //            foreach (var pair in assignments)
+        //            {
+        //                int centreCode = pair.Key;
+        //                int count = pair.Value;
+        //                if (count <= 0) continue;
+
+        //                var toAssign = candidates
+        //                    .Skip(startIndex)
+        //                    .Take(count)
+        //                    .ToList();
+
+        //                foreach (var reg in toAssign)
+        //                {
+        //                    reg.AssignedCentre = centreCode; // direct int assignment
+        //                    updatedRegs.Add(reg);
+        //                }
+
+        //                // update capacity tracker
+        //                remainingCap[centreCode] -= count;
+        //                startIndex += count;
+        //            }
+        //        }
+        //    }
+
+        //    // Step 7: Save all updates
+        //    if (updatedRegs.Any())
+        //    {
+        //        _context.Registration.UpdateRange(updatedRegs);
+        //        await _context.SaveChangesAsync();
+        //    }
+
+        //    return Ok(new { message = "Candidates distributed successfully by initials, respecting centre capacities." });
+        //}
+
+        [HttpPost("distribute")]
+        public async Task<IActionResult> DistributeCandidates()
+        {
+            string session = "2025-26";
+
+            // Step 1: Get data
+            var centres = await _context.Centre
+                .Where(c => c.CentreTableSession == session)
+                .ToListAsync();
+
+            var registrations = await _context.Registration
+                .Where(r => r.Session == session)
+                .ToListAsync();
+
+            // Step 2: Group registrations by city
+            var cities = registrations
+                .GroupBy(r => r.AssignedCity)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            List<Registrations> updatedRegs = new();
+
+            // Step 3: Process each city separately
+            foreach (var cityGroup in cities)
+            {
+                var cityCode = cityGroup.Key;
+                var cityRegs = cityGroup.Value;
+
+                // Get centres belonging to this city
+                var cityCentres = centres
+                    .Where(c => c.CityCode == cityCode)
+                    .OrderBy(c => c.CentreCode)
+                    .ToList();
+
+                if (!cityCentres.Any())
+                    continue;
+
+                // Step 3.1: Available seats per centre (utilisedSeat = capacity)
+                var remainingCap = cityCentres.ToDictionary(
+                    c => c.CentreCode,
+                    c => c.utilisedSeat ?? 0
+                );
+
+                // Step 4: Group candidates by first letter of name
+                var initials = cityRegs
+                    .GroupBy(r => string.IsNullOrWhiteSpace(r.Name)
+                        ? "#" : r.Name.Substring(0, 1).ToUpper())
+                    .OrderByDescending(g => g.Count())
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // Step 5: Distribute candidates by initials
+                foreach (var initialGroup in initials)
+                {
+                    var candidates = initialGroup.Value;
+                    int totalCandidates = candidates.Count;
+
+                    // Get centres with available capacity
+                    var activeCentres = remainingCap
+                        .Where(c => c.Value > 0)
+                        .ToDictionary(c => c.Key, c => c.Value);
+
+                    if (!activeCentres.Any())
+                        break; // all centres full
+
+                    int totalAvailable = activeCentres.Values.Sum();
+
+                    // Step 5.1: Proportional distribution
+                    var assignments = new Dictionary<int, int>();
+                    int assigned = 0;
+
+                    foreach (var kvp in activeCentres)
+                    {
+                        int centreCode = kvp.Key;
+                        int available = kvp.Value;
+
+                        int assignCount = (int)Math.Floor((double)available / totalAvailable * totalCandidates);
+                        assignCount = Math.Min(assignCount, available);
+
+                        assignments[centreCode] = assignCount;
+                        assigned += assignCount;
+                    }
+
+                    // Step 5.2: Handle remaining candidates (rounding leftovers)
+                    int leftover = totalCandidates - assigned;
+                    if (leftover > 0)
+                    {
+                        var sorted = activeCentres
+                            .OrderByDescending(c => c.Value)
+                            .Select(c => c.Key)
+                            .ToList();
+
+                        int i = 0;
+                        while (leftover > 0)
+                        {
+                            var code = sorted[i % sorted.Count];
+                            assignments[code]++;
+                            leftover--;
+                            i++;
+                        }
+                    }
+
+                    // Step 5.3: Apply assignments
+                    int startIndex = 0;
+                    foreach (var assign in assignments)
+                    {
+                        int centreCode = assign.Key;
+                        int count = assign.Value;
+                        if (count <= 0) continue;
+
+                        var toAssign = candidates
+                            .Skip(startIndex)
+                            .Take(count)
+                            .ToList();
+
+                        foreach (var reg in toAssign)
+                        {
+                            reg.AssignedCentre = centreCode;
+                            updatedRegs.Add(reg);
+                        }
+
+                        remainingCap[centreCode] = Math.Max(remainingCap[centreCode] - count, 0);
+                        startIndex += count;
+                    }
+                }
+
+                // Step 6: Assign any unassigned candidates
+                var unassigned = cityRegs
+                    .Where(r => r.AssignedCentre == null || r.AssignedCentre == 0)
+                    .ToList();
+
+                if (unassigned.Any())
+                {
+                    var sortedByCap = remainingCap
+                        .OrderByDescending(c => c.Value)
+                        .Select(c => c.Key)
+                        .ToList();
+
+                    int i = 0;
+                    foreach (var reg in unassigned)
+                    {
+                        int centreCode = sortedByCap[i % sortedByCap.Count];
+                        reg.AssignedCentre = centreCode;
+                        updatedRegs.Add(reg);
+
+                        remainingCap[centreCode] = Math.Max(remainingCap[centreCode] - 1, 0);
+                        i++;
+                    }
+                }
+            }
+
+            // Step 7: Save updates
+            if (updatedRegs.Any())
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                _context.Registration.UpdateRange(updatedRegs);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+
+            return Ok(new
+            {
+                message = "Candidates distributed successfully based on centre seat capacities (utilisedSeat) and initials."
+            });
+        }
+
+
+
+
+        /*
+                [HttpPost("distribute")]
+                public async Task<IActionResult> DistributeCandidates()
+                {
+                    // Fetch the centres and their utilised seats for session "2025-26"
+                    var centres = await _context.Centre
+                        .Where(c => c.CentreTableSession == "2025-26")
+                        .ToListAsync();
+
+                    // Fetch the registration data for session "2025-26"
+                    var registrations = await _context.Registration
+                        .Where(r => r.Session == "2025-26")
+                        .ToListAsync();
+
+                    // Step 1: Calculate frequency of each letter based on registration data
+                    var letterFrequencies = registrations
+                        .GroupBy(r => new { r.AssignedCity, FirstLetter = r.Name.Substring(0, 1).ToUpper() })
+                        .ToDictionary(g => g.Key, g => g.Count()); // Calculate frequency
+
+                    // Step 2: Prepare the list of centres per city
+                    var centresByCity = centres
+                        .GroupBy(c => c.CityCode) // Group centres by CityCode
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    // Step 3: Distribute candidates across centres and update the `AssignedCentre`
+                    List<Registrations> updatedRegistrations = new List<Registrations>();
+
+                    foreach (var letterGroup in letterFrequencies)
+                    {
+                        var cityCode = letterGroup.Key.AssignedCity ?? 0;
+                        var letterCode = letterGroup.Key.FirstLetter;
+                        var targetFrequency = letterGroup.Value;
+
+                        // Get centres for the current city
+                        var cityCentres = centresByCity.ContainsKey(cityCode) ? centresByCity[cityCode] : new List<Centres>();
+
+                        // Calculate the total utilised seats across all centres in this city
+                        int totalUtilisedSeats = cityCentres.Sum(c => c.utilisedSeat ?? 0);
+
+                        // If no seats are utilised, skip this letter distribution for the city
+                        if (totalUtilisedSeats == 0)
+                        {
+                            continue;
+                        }
+
+                        // Step 4: Calculate the initial proportional distribution
+                        int totalAssigned = 0;
+                        List<(Centres Centre, int Assigned)> centreAssignments = new List<(Centres Centre, int Assigned)>();
+
+                        foreach (var centre in cityCentres)
+                        {
+                            // Calculate the proportional number of candidates for this centre
+                            int candidatesToAssign = (int)Math.Round((double)centre.utilisedSeat * targetFrequency / totalUtilisedSeats);
+
+                            // Make sure no centre is allocated more candidates than it can handle (its utilised seats)
+                            candidatesToAssign = Math.Min(candidatesToAssign, centre.utilisedSeat ?? 0);
+
+                            centreAssignments.Add((centre, candidatesToAssign));
+                            totalAssigned += candidatesToAssign;
+                        }
+
+                        // Step 5: Adjust for rounding errors to ensure the total matches the target frequency
+                        // Step 5: Adjust for rounding errors to ensure the total matches the target frequency
+                        int remainingCandidates = targetFrequency - totalAssigned;
+
+                        // If there are remaining candidates to be distributed, distribute them
+                        if (remainingCandidates != 0)
+                        {
+                            // Find the centre(s) with the highest utilised seats and adjust their assigned number
+                            var sortedCentreAssignments = centreAssignments.OrderByDescending(ca => ca.Centre.utilisedSeat).ToList();
+
+                            for (int i = 0; i < sortedCentreAssignments.Count; i++)
+                            {
+                                var centreAssignment = sortedCentreAssignments[i];
+
+                                if (remainingCandidates == 0) break;
+
+                                var centre = centreAssignment.Centre;
+                                int maxAssignable = centre.utilisedSeat ?? 0;
+
+                                // Distribute the remaining candidates without exceeding the centre's capacity
+                                int additionalAssignment = Math.Min(remainingCandidates, maxAssignable - centreAssignment.Assigned);
+                                centreAssignments[i] = (centre, centreAssignment.Assigned + additionalAssignment); // Update the centre assignment
+                                remainingCandidates -= additionalAssignment;
+
+                                if (remainingCandidates == 0) break;
+                            }
+                        }
+
+
+                        // Step 6: Ensure the final count of assigned candidates matches the target frequency
+                        if (remainingCandidates != 0)
+                        {
+                            return BadRequest("Could not distribute all candidates exactly due to rounding errors.");
+                        }
+
+                        // Step 7: Assign candidates to the centres
+                        foreach (var centreAssignment in centreAssignments)
+                        {
+                            var centre = centreAssignment.Centre;
+                            var centreAssigned = centreAssignment.Assigned;
+
+                            // Step 8: Get registrations for this letter and city that haven't been assigned a centre
+                            var registrationsToUpdate = registrations
+                                .Where(r => r.Name.Substring(0, 1).ToUpper() == letterCode && r.AssignedCity == cityCode && r.AssignedCentre == null && r.Session == "2025-26")
+                                .Take(centreAssigned) // Limit the number of candidates to be assigned
+                                .ToList();
+
+                            // Step 9: Assign candidates to the centre
+                            foreach (var reg in registrationsToUpdate)
+                            {
+                                reg.AssignedCentre = centre.CentreCode; // Assign the centre code to the registration
+                                updatedRegistrations.Add(reg); // Add to the list of updated registrations
+                            }
+                        }
+                    }
+
+                    // Step 10: Save the updated registrations to the database for session "2025-26"
+                    if (updatedRegistrations.Any())
+                    {
+                        _context.Registration.UpdateRange(updatedRegistrations);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    return Ok(new { message = "Candidates successfully distributed and assigned to centres." });
+                }
+        */
+
+        //[HttpPost("allocate-rollnumbers")]
+        //public async Task<IActionResult> AllocateRollNumbers()
+        //{
+        //    try
+        //    {
+        //        // Load all seat allotments
+        //        var seatAllotments = await _context.seat_allotments
+        //            .ToListAsync();
+
+        //        // Group by center_code and city_code
+        //        var groupedByCentre = seatAllotments
+        //            .GroupBy(s => new { s.center_code, s.city_code })
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        foreach (var group in groupedByCentre)
+        //        {
+        //            int cityCode = group.Key.city_code;
+        //            int centreCode = group.Key.center_code;
+
+        //            // Sort by Room → Seat Row → Seat Number
+        //            var sortedSeats = group.Value
+        //                .OrderBy(s => s.city_code)
+        //                .ThenBy(s => s.center_code)
+        //                .ThenBy(s => s.room_number)
+        //                .ThenBy(s => s.seat_row)
+        //                .ThenBy(s => s.seat_number)
+        //                .ToList();
+
+        //            int serial = 1;
+
+        //            foreach (var seat in sortedSeats)
+        //            {
+        //                string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // e.g., "25"
+        //                string cityPart = cityCode.ToString("D2"); // 2 digits
+        //                string centrePart = centreCode.ToString("D2"); // 2 digits
+        //                string serialPart = serial.ToString("D3"); // 3 digits
+
+        //                seat.roll_no = int.Parse($"{yearPart}{cityPart}{centrePart}{serialPart}");
+        //                serial++;
+        //            }
+        //        }
+
+        //        await _context.SaveChangesAsync();
+        //        return Ok(new { message = "Roll numbers allocated successfully" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error during roll number allocation", details = ex.Message });
+        //    }
+        //}
+
+
+        // }
+
+
+        //[HttpPost("assign-rooms-balanced")]
+        //public async Task<IActionResult> AssignRoomsBalanced([FromQuery] string session)
+        //{
+        //    try
+        //    {
+        //        // 1️⃣ Load all registrations for the given session having valid centres
+        //        var registrations = await _context.Registration
+        //            .Where(r => r.Session == session && r.AssignedBoth != null)
+        //            .OrderBy(r => r.Name)
+        //            .ToListAsync();
+
+        //        if (!registrations.Any())
+        //            return BadRequest("No registrations found for this session.");
+
+        //        // 2️⃣ Load all rooms (only those with valid CityCode and CentreCode)
+        //        var allRooms = await _context.Rooms
+        //            .Where(r => r.CityCode != null && r.CentreCode != null)
+        //            .OrderBy(r => r.RoomNo)
+        //            .ToListAsync();
+
+        //        if (!allRooms.Any())
+        //            return BadRequest("No rooms found in the database.");
+
+        //        // 3️⃣ Group registrations by AssignedCentre
+        //        var centreGroups = registrations
+        //            .GroupBy(r => r.AssignedBoth)
+        //            .ToList();
+
+        //        int totalAssigned = 0;
+
+        //        foreach (var centreGroup in centreGroups)
+        //        {
+        //            int assignedCentre = centreGroup.Key ?? 0;
+        //            var centreRegistrations = centreGroup.ToList();
+
+        //            // Extract city and centre code
+        //            int cityCode = assignedCentre / 100;
+        //            int centreCode = assignedCentre % 100;
+
+        //            // Get matching rooms
+        //            var roomsRaw = allRooms
+        //                .Where(r => r.CityCode == cityCode && r.CentreCode == centreCode.ToString())
+        //                .ToList();
+
+        //            if (!roomsRaw.Any())
+        //            {
+        //                Console.WriteLine($"⚠️ No rooms found for AssignedCentre: {assignedCentre}");
+        //                continue;
+        //            }
+
+        //            // Clean duplicates and nulls
+        //            var rooms = roomsRaw
+        //                .Where(r => r.RoomNo.HasValue && r.RoomNo.Value > 0)
+        //                .GroupBy(r => r.RoomNo.Value)
+        //                .Select(g => g.First())
+        //                .OrderBy(r => r.RoomNo)
+        //                .ToList();
+
+        //            // Initialize trackers
+        //            var roomUsage = new Dictionary<int, RoomTracker>();
+        //            foreach (var room in rooms)
+        //            {
+        //                if (!roomUsage.ContainsKey(room.RoomNo.Value))
+        //                {
+        //                    roomUsage[room.RoomNo.Value] = new RoomTracker(room.RoomCapacity ?? 0);
+        //                }
+        //            }
+
+        //            // Group by initials and sort descending by candidate count
+        //            var letterGroups = centreRegistrations
+        //                .GroupBy(r => char.ToUpper(r.Name.FirstOrDefault()))
+        //                .OrderByDescending(g => g.Count())
+        //                .ToList();
+
+        //            // Start assigning students
+        //            foreach (var group in letterGroups)
+        //            {
+        //                var letter = group.Key;
+        //                var candidates = group.ToList();
+
+        //                foreach (var candidate in candidates)
+        //                {
+        //                    bool assigned = false;
+
+        //                    foreach (var room in rooms)
+        //                    {
+        //                        var roomNo = room.RoomNo.Value;
+        //                        var tracker = roomUsage[roomNo];
+
+        //                        if (tracker.Used < tracker.Capacity)
+        //                        {
+        //                            int sameLetterCount = tracker.Assigned.GetValueOrDefault(letter, 0);
+
+        //                            // Restrict 12 per same initial per room
+        //                            if (sameLetterCount >= 12)
+        //                                continue;
+
+        //                            // Assign
+        //                            candidate.RoomNumber = roomNo;
+        //                            tracker.Used++;
+        //                            tracker.Assigned[letter] = sameLetterCount + 1;
+
+        //                            assigned = true;
+        //                            totalAssigned++;
+        //                            break;
+        //                        }
+        //                    }
+
+        //                    if (!assigned)
+        //                    {
+        //                        Console.WriteLine($"⚠️ No available room found for {candidate.Name} ({letter}) in centre {assignedCentre}");
+        //                    }
+        //                }
+        //            }
+
+        //            Console.WriteLine($"✅ Centre {assignedCentre}: {centreRegistrations.Count} students processed.");
+        //        }
+
+        //        // 6️⃣ Save updates to DB
+        //        await _context.SaveChangesAsync();
+
+        //        return Ok(new
+        //        {
+        //            message = "Room assignment completed for all centres.",
+        //            totalAssigned
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new
+        //        {
+        //            message = "Error during room assignment.",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
+
+        //// Helper class
+        //public class RoomTracker
+        //{
+        //    public int Capacity { get; set; }
+        //    public int Used { get; set; }
+        //    public Dictionary<char, int> Assigned { get; set; }
+
+        //    public RoomTracker(int capacity)
+        //    {
+        //        Capacity = capacity;
+        //        Used = 0;
+        //        Assigned = new Dictionary<char, int>();
+        //    }
+        //}
+
+
+        [HttpPost("assign-rooms-balanced")]
+        public async Task<IActionResult> AssignRoomsBalanced([FromQuery] string session)
+        {
+            try
+            {
+                const int RoomSize = 24;
+                const int SeatsPerRow = 6;
+                const int RowsPerRoom = RoomSize / SeatsPerRow;
+
+                // 1️⃣ Load registrations for the session
+                var registrations = await _context.Registration
+                    .Where(r => r.Session == session && r.AssignedBoth != null)
+                    .OrderBy(r => r.Name)
+                    .ToListAsync();
+
+                if (!registrations.Any())
+                    return BadRequest("No registrations found for this session.");
+
+                // 2️⃣ Load all rooms
+                var allRooms = await _context.Rooms
+                    .Where(r => r.CityCode != null && r.CentreCode != null)
+                    .OrderBy(r => r.RoomNo)
+                    .ToListAsync();
+
+                if (!allRooms.Any())
+                    return BadRequest("No rooms found in the database.");
+
+                // 3️⃣ Group by AssignedCentre
+                var centreGroups = registrations.GroupBy(r => r.AssignedBoth).ToList();
+
+                int totalAssigned = 0;
+
+                foreach (var centreGroup in centreGroups)
+                {
+                    int assignedCentre = centreGroup.Key ?? 0;
+                    var centreRegistrations = centreGroup.ToList();
+
+                    int cityCode = assignedCentre / 100;
+                    int centreCode = assignedCentre % 100;
+
+                    // 4️⃣ Find rooms for this centre
+                    var rooms = allRooms
+                        .Where(r => r.CityCode == cityCode && r.CentreCode == centreCode.ToString())
+                        .OrderBy(r => r.RoomNo)
+                        .ToList();
+
+                    if (!rooms.Any())
+                    {
+                        Console.WriteLine($"⚠️ No rooms found for centre {assignedCentre}");
+                        continue;
+                    }
+
+                    // Group candidates by first letter
+                    var letterGroups = centreRegistrations
+                        .GroupBy(r => char.ToUpper(r.Name.FirstOrDefault()))
+                        .OrderBy(g => g.Key)
+                        .ToDictionary(g => g.Key, g => new Queue<Registrations>(g));
+
+                    var assignedCandidates = new HashSet<int>();
+
+                    // 5️⃣ Phase 1: Assign seats (non-adjacent by first letter)
+                    foreach (var room in rooms)
+                    {
+                        var seatingGrid = new Registrations[RowsPerRoom, SeatsPerRow];
+                        int assignedInRoom = 0;
+
+                        for (int row = 0; row < RowsPerRoom; row++)
+                        {
+                            for (int seat = 0; seat < SeatsPerRow; seat++)
+                            {
+                                if (assignedInRoom >= RoomSize) break;
+
+                                char? leftInitial = seat > 0 && seatingGrid[row, seat - 1] != null
+                                    ? char.ToUpper(seatingGrid[row, seat - 1].Name.FirstOrDefault())
+                                    : (char?)null;
+
+                                char? aboveInitial = row > 0 && seatingGrid[row - 1, seat] != null
+                                    ? char.ToUpper(seatingGrid[row - 1, seat].Name.FirstOrDefault())
+                                    : (char?)null;
+
+                                var nextGroup = letterGroups
+                                    .Where(g => g.Value.Any() &&
+                                                g.Key != leftInitial &&
+                                                g.Key != aboveInitial)
+                                    .OrderByDescending(g => g.Value.Count)
+                                    .FirstOrDefault();
+
+                                if (nextGroup.Value == null)
+                                    continue;
+
+                                var candidate = nextGroup.Value.Dequeue();
+                                candidate.RoomNumber = room.RoomNo;
+                                assignedCandidates.Add(candidate.Id);
+                                assignedInRoom++;
+                                totalAssigned++;
+                                seatingGrid[row, seat] = candidate;
+                            }
+                        }
+                    }
+
+                    // 6️⃣ Phase 2: Assign leftovers to rooms with available capacity
+                    var unassigned = centreRegistrations
+                        .Where(r => r.RoomNumber == null)
+                        .ToList();
+
+                    if (unassigned.Any())
+                    {
+                        var roomOccupancy = rooms.ToDictionary(r => r.RoomNo.Value, _ => 0);
+                        foreach (var reg in centreRegistrations.Where(r => r.RoomNumber != null))
+                        {
+                            if (roomOccupancy.ContainsKey((int)reg.RoomNumber))
+                                roomOccupancy[(int)reg.RoomNumber]++;
+                        }
+
+                        foreach (var candidate in unassigned)
+                        {
+                            var availableRoom = roomOccupancy
+                                .Where(r => r.Value < RoomSize)
+                                .OrderBy(r => r.Value)
+                                .FirstOrDefault();
+
+                            if (availableRoom.Key != 0)
+                            {
+                                candidate.RoomNumber = availableRoom.Key;
+                                roomOccupancy[availableRoom.Key]++;
+                                totalAssigned++;
+                            }
+                        }
+                    }
+
+                    // 7️⃣ Phase 3: Final check — no one left unassigned, no overfill
+                    var stillUnassigned = centreRegistrations
+                        .Where(r => r.RoomNumber == null)
+                        .ToList();
+
+                    if (stillUnassigned.Any())
+                    {
+                        var roomCounts = centreRegistrations
+                            .Where(r => r.RoomNumber != null)
+                            .GroupBy(r => r.RoomNumber)
+                            .ToDictionary(g => g.Key!.Value, g => g.Count());
+
+                        foreach (var candidate in stillUnassigned)
+                        {
+                            var availableRoom = roomCounts
+                                .Where(rc => rc.Value < RoomSize)
+                                .OrderBy(rc => rc.Value)
+                                .Select(rc => rc.Key)
+                                .FirstOrDefault();
+
+                            if (availableRoom != 0)
+                            {
+                                candidate.RoomNumber = availableRoom;
+                                roomCounts[availableRoom]++;
+                                totalAssigned++;
+                            }
+                            else
+                            {
+                                // as absolute fallback — assign to smallest room id
+                                candidate.RoomNumber = rooms.First().RoomNo;
+                                totalAssigned++;
+                            }
+                        }
+                    }
+
+                    Console.WriteLine($"✅ Centre {assignedCentre}: {centreRegistrations.Count} processed.");
+                }
+
+                // 8️⃣ Save changes
+                await _context.SaveChangesAsync();
+
+                int total = registrations.Count;
+                int unassignedCount = registrations.Count(r => r.RoomNumber == null);
+
+                return Ok(new
+                {
+                    message = "Room assignment completed successfully (non-adjacent + full guaranteed).",
+                    totalAssigned,
+                    totalCandidates = total,
+                    unassignedCount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Error during room assignment.",
+                    details = ex.Message
+                });
+            }
+        }
 
 
     }
 }
+

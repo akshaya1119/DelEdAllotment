@@ -11,7 +11,9 @@ namespace DelEdAllotment.Data
         }
         public DbSet <Centres> Centre {  get; set; }
         public DbSet <Registrations> Registration { get; set; }
+        public DbSet <Seat_Allotment> seat_allotments { get; set; }
 
+        public DbSet <Room> Rooms { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

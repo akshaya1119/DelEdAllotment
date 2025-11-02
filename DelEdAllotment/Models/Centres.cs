@@ -18,5 +18,6 @@ namespace DelEdAllotment.Models
         public int Capacity { get; set; }
         public int? IncreasedCapacity { get; set; }
         public string? CentreTableSession {  get; set; }
+        public int? utilisedSeat { get; set; }
     }
 }
