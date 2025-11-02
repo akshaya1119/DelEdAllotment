@@ -113,7 +113,7 @@ namespace DelEdAllotment.Controllers
         {
             try
             {
-                string session = "2021-22";
+                string session = "2025-26";
 
                 if (!int.TryParse(registrationNo, out int regNo))
                     return BadRequest(new { message = "Invalid registration number format." });
@@ -186,11 +186,11 @@ namespace DelEdAllotment.Controllers
 
 
         [HttpGet("get-registration-batch")]
-        public async Task<ActionResult<object>> GetRegistrationBatch(int start = 0, int size = 1000)
+        public async Task<ActionResult<object>> GetRegistrationBatch(int start = 0, int size = 3)
         {
             try
             {
-                string session = "2021-22";
+                string session = "2025-26";
 
                 // Get ordered registrations for the session
                 var registrations = await _context.Registration
@@ -466,6 +466,9 @@ namespace DelEdAllotment.Controllers
                     new { message = "Error during city allocation", details = ex.Message });
             }
         }
+
+
+        //---- this api is for Increased capacity, increase the capacity in centre table and update the assigned centre to null
 
         //[HttpPost("allocate-centres-balanced")]
         //public async Task<IActionResult> AllocateCentresBalanced([FromQuery] string session)
@@ -1201,214 +1204,7 @@ namespace DelEdAllotment.Controllers
                 }
         */
 
-        //[HttpPost("allocate-rollnumbers")]
-        //public async Task<IActionResult> AllocateRollNumbers()
-        //{
-        //    try
-        //    {
-        //        // Load all seat allotments
-        //        var seatAllotments = await _context.seat_allotments
-        //            .ToListAsync();
-
-        //        // Group by center_code and city_code
-        //        var groupedByCentre = seatAllotments
-        //            .GroupBy(s => new { s.center_code, s.city_code })
-        //            .ToDictionary(g => g.Key, g => g.ToList());
-
-        //        foreach (var group in groupedByCentre)
-        //        {
-        //            int cityCode = group.Key.city_code;
-        //            int centreCode = group.Key.center_code;
-
-        //            // Sort by Room → Seat Row → Seat Number
-        //            var sortedSeats = group.Value
-        //                .OrderBy(s => s.city_code)
-        //                .ThenBy(s => s.center_code)
-        //                .ThenBy(s => s.room_number)
-        //                .ThenBy(s => s.seat_row)
-        //                .ThenBy(s => s.seat_number)
-        //                .ToList();
-
-        //            int serial = 1;
-
-        //            foreach (var seat in sortedSeats)
-        //            {
-        //                string yearPart = DateTime.Now.Year.ToString().Substring(2, 2); // e.g., "25"
-        //                string cityPart = cityCode.ToString("D2"); // 2 digits
-        //                string centrePart = centreCode.ToString("D2"); // 2 digits
-        //                string serialPart = serial.ToString("D3"); // 3 digits
-
-        //                seat.roll_no = int.Parse($"{yearPart}{cityPart}{centrePart}{serialPart}");
-        //                serial++;
-        //            }
-        //        }
-
-        //        await _context.SaveChangesAsync();
-        //        return Ok(new { message = "Roll numbers allocated successfully" });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError,
-        //            new { message = "Error during roll number allocation", details = ex.Message });
-        //    }
-        //}
-
-
-        // }
-
-
-        //[HttpPost("assign-rooms-balanced")]
-        //public async Task<IActionResult> AssignRoomsBalanced([FromQuery] string session)
-        //{
-        //    try
-        //    {
-        //        // 1️⃣ Load all registrations for the given session having valid centres
-        //        var registrations = await _context.Registration
-        //            .Where(r => r.Session == session && r.AssignedBoth != null)
-        //            .OrderBy(r => r.Name)
-        //            .ToListAsync();
-
-        //        if (!registrations.Any())
-        //            return BadRequest("No registrations found for this session.");
-
-        //        // 2️⃣ Load all rooms (only those with valid CityCode and CentreCode)
-        //        var allRooms = await _context.Rooms
-        //            .Where(r => r.CityCode != null && r.CentreCode != null)
-        //            .OrderBy(r => r.RoomNo)
-        //            .ToListAsync();
-
-        //        if (!allRooms.Any())
-        //            return BadRequest("No rooms found in the database.");
-
-        //        // 3️⃣ Group registrations by AssignedCentre
-        //        var centreGroups = registrations
-        //            .GroupBy(r => r.AssignedBoth)
-        //            .ToList();
-
-        //        int totalAssigned = 0;
-
-        //        foreach (var centreGroup in centreGroups)
-        //        {
-        //            int assignedCentre = centreGroup.Key ?? 0;
-        //            var centreRegistrations = centreGroup.ToList();
-
-        //            // Extract city and centre code
-        //            int cityCode = assignedCentre / 100;
-        //            int centreCode = assignedCentre % 100;
-
-        //            // Get matching rooms
-        //            var roomsRaw = allRooms
-        //                .Where(r => r.CityCode == cityCode && r.CentreCode == centreCode.ToString())
-        //                .ToList();
-
-        //            if (!roomsRaw.Any())
-        //            {
-        //                Console.WriteLine($"⚠️ No rooms found for AssignedCentre: {assignedCentre}");
-        //                continue;
-        //            }
-
-        //            // Clean duplicates and nulls
-        //            var rooms = roomsRaw
-        //                .Where(r => r.RoomNo.HasValue && r.RoomNo.Value > 0)
-        //                .GroupBy(r => r.RoomNo.Value)
-        //                .Select(g => g.First())
-        //                .OrderBy(r => r.RoomNo)
-        //                .ToList();
-
-        //            // Initialize trackers
-        //            var roomUsage = new Dictionary<int, RoomTracker>();
-        //            foreach (var room in rooms)
-        //            {
-        //                if (!roomUsage.ContainsKey(room.RoomNo.Value))
-        //                {
-        //                    roomUsage[room.RoomNo.Value] = new RoomTracker(room.RoomCapacity ?? 0);
-        //                }
-        //            }
-
-        //            // Group by initials and sort descending by candidate count
-        //            var letterGroups = centreRegistrations
-        //                .GroupBy(r => char.ToUpper(r.Name.FirstOrDefault()))
-        //                .OrderByDescending(g => g.Count())
-        //                .ToList();
-
-        //            // Start assigning students
-        //            foreach (var group in letterGroups)
-        //            {
-        //                var letter = group.Key;
-        //                var candidates = group.ToList();
-
-        //                foreach (var candidate in candidates)
-        //                {
-        //                    bool assigned = false;
-
-        //                    foreach (var room in rooms)
-        //                    {
-        //                        var roomNo = room.RoomNo.Value;
-        //                        var tracker = roomUsage[roomNo];
-
-        //                        if (tracker.Used < tracker.Capacity)
-        //                        {
-        //                            int sameLetterCount = tracker.Assigned.GetValueOrDefault(letter, 0);
-
-        //                            // Restrict 12 per same initial per room
-        //                            if (sameLetterCount >= 12)
-        //                                continue;
-
-        //                            // Assign
-        //                            candidate.RoomNumber = roomNo;
-        //                            tracker.Used++;
-        //                            tracker.Assigned[letter] = sameLetterCount + 1;
-
-        //                            assigned = true;
-        //                            totalAssigned++;
-        //                            break;
-        //                        }
-        //                    }
-
-        //                    if (!assigned)
-        //                    {
-        //                        Console.WriteLine($"⚠️ No available room found for {candidate.Name} ({letter}) in centre {assignedCentre}");
-        //                    }
-        //                }
-        //            }
-
-        //            Console.WriteLine($"✅ Centre {assignedCentre}: {centreRegistrations.Count} students processed.");
-        //        }
-
-        //        // 6️⃣ Save updates to DB
-        //        await _context.SaveChangesAsync();
-
-        //        return Ok(new
-        //        {
-        //            message = "Room assignment completed for all centres.",
-        //            totalAssigned
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, new
-        //        {
-        //            message = "Error during room assignment.",
-        //            details = ex.Message
-        //        });
-        //    }
-        //}
-
-        //// Helper class
-        //public class RoomTracker
-        //{
-        //    public int Capacity { get; set; }
-        //    public int Used { get; set; }
-        //    public Dictionary<char, int> Assigned { get; set; }
-
-        //    public RoomTracker(int capacity)
-        //    {
-        //        Capacity = capacity;
-        //        Used = 0;
-        //        Assigned = new Dictionary<char, int>();
-        //    }
-        //}
-
+   
 
         [HttpPost("assign-rooms-balanced")]
         public async Task<IActionResult> AssignRoomsBalanced([FromQuery] string session)
@@ -1601,6 +1397,145 @@ namespace DelEdAllotment.Controllers
                 });
             }
         }
+
+
+
+        //rollno not assigning in sequence
+
+    //    [HttpPost("assign-rollnumbers")]
+    //    public async Task<IActionResult> AssignRollNumbers(string session = "2025-26")
+    //    {
+    //        var registrations = await _context.Registration
+    //            .Where(r => r.Session == session && r.AssignedCentre != null && r.RoomNumber != null)
+    //            .OrderBy(r => r.AssignedCentre)
+    //            .ToListAsync();
+
+    //        var groupedByCentre = registrations
+    //            .GroupBy(r => new { r.AssignedCity, r.AssignedCentre })
+    //            .ToList();
+
+    //        foreach (var centreGroup in groupedByCentre)
+    //        {
+    //            int serial = 1;
+    //            var rooms = centreGroup.GroupBy(r => r.RoomNumber);
+
+    //            foreach (var room in rooms)
+    //            {
+    //                var candidates = room.ToList();
+    //                var seatLayout = new Registrations[6, 4]; // 6x4 = 24 seats
+
+    //                // Group by first letter of name
+    //                var letterGroups = candidates
+    //.GroupBy(x => char.ToUpper(x.Name.FirstOrDefault()))
+    //.OrderByDescending(g => g.Count())
+    //.Select(g => g.ToList()) // convert to list for mutable handling
+    //.ToList();
+
+    //                // Flatten groups while shuffling to reduce adjacency
+    //                var arrangedList = new List<Registrations>();
+    //                while (letterGroups.Any(g => g.Any()))
+    //                {
+    //                    foreach (var g in letterGroups.ToList())
+    //                    {
+    //                        if (g.Any())
+    //                        {
+    //                            arrangedList.Add(g.First());
+    //                            letterGroups.Remove(g);
+    //                            var remaining = g.Skip(1).ToList();
+    //                            if (remaining.Any())
+    //                                letterGroups.Add(remaining );
+    //                        }
+    //                    }
+    //                }
+
+    //                int rows = 6, cols = 4;
+    //                int index = 0;
+
+    //                for (int r = 0; r < rows; r++)
+    //                {
+    //                    for (int c = 0; c < cols; c++)
+    //                    {
+    //                        if (index >= arrangedList.Count)
+    //                            break;
+
+    //                        var candidate = arrangedList[index];
+    //                        char initial = char.ToUpper(candidate.Name.FirstOrDefault());
+
+    //                        // Find safe spot (no same initial adjacent)
+    //                        bool placed = false;
+    //                        for (int rr = 0; rr < rows && !placed; rr++)
+    //                        {
+    //                            for (int cc = 0; cc < cols && !placed; cc++)
+    //                            {
+    //                                if (seatLayout[rr, cc] != null) continue;
+
+    //                                bool safe = true;
+    //                                var dirs = new (int, int)[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
+    //                                foreach (var (dr, dc) in dirs)
+    //                                {
+    //                                    int nr = rr + dr, nc = cc + dc;
+    //                                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols)
+    //                                    {
+    //                                        var adj = seatLayout[nr, nc];
+    //                                        if (adj != null && char.ToUpper(adj.Name.FirstOrDefault()) == initial)
+    //                                        {
+    //                                            safe = false;
+    //                                            break;
+    //                                        }
+    //                                    }
+    //                                }
+
+    //                                if (safe)
+    //                                {
+    //                                    seatLayout[rr, cc] = candidate;
+    //                                    placed = true;
+    //                                }
+    //                            }
+    //                        }
+
+    //                        // fallback if not placed safely
+    //                        if (!placed)
+    //                        {
+    //                            for (int rr = 0; rr < rows && !placed; rr++)
+    //                            {
+    //                                for (int cc = 0; cc < cols && !placed; cc++)
+    //                                {
+    //                                    if (seatLayout[rr, cc] == null)
+    //                                    {
+    //                                        seatLayout[rr, cc] = candidate;
+    //                                        placed = true;
+    //                                    }
+    //                                }
+    //                            }
+    //                        }
+
+    //                        index++;
+    //                    }
+    //                }
+
+    //                // Assign roll numbers row-wise
+    //                for (int r = 0; r < rows; r++)
+    //                {
+    //                    for (int c = 0; c < cols; c++)
+    //                    {
+    //                        var candidate = seatLayout[r, c];
+    //                        if (candidate == null) continue;
+
+    //                        candidate.RollNumber = int.Parse($"25{centreGroup.Key.AssignedCity:D2}{centreGroup.Key.AssignedCentre:D2}{serial:D3}");
+    //                        serial++;
+    //                    }
+    //                }
+    //            }
+    //        }
+
+    //        await _context.SaveChangesAsync();
+
+    //        return Ok(new
+    //        {
+    //            message = "Roll number assignment completed successfully (no adjacent same initials).",
+    //            totalAssigned = registrations.Count
+    //        });
+    //    }
 
 
     }
