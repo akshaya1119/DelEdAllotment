@@ -23,10 +23,48 @@ namespace DelEdAllotment.Controllers
 
         // GET: api/Centres
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Centres>>> GetCentre()
+        public async Task<ActionResult<IEnumerable<Centres>>> GetCentre([FromQuery]  int citycode, string session = "2025-26")
         {
-            return await _context.Centre.ToListAsync();
+            if (string.IsNullOrEmpty(session))
+            {
+                return BadRequest("Session is required.");
+            }
+
+            // Example: filter centres by a session string value
+            var centres = await _context.Centre
+                .Where(c => c.CentreTableSession == session && c.CityCode == citycode) // Assuming your Centres table has a Session column
+                .ToListAsync();
+
+            return centres;
         }
+
+        [HttpGet("get-cities")]
+        public async Task<ActionResult<IEnumerable<Centres>>> GetCity([FromQuery] string session = "2025-26")
+        {
+            if (string.IsNullOrEmpty(session))
+            {
+                return BadRequest("Session is required.");
+            }
+
+            // Example: filter centres by a session string value
+            var cities = await _context.Centre
+                .Where(c => c.CentreTableSession == session) // Assuming your Centres table has a Session column
+                  .Select(c => new
+                  {
+                      c.CityCode,
+                      c.CityNameHindi
+                  })
+        .Distinct()
+                .ToListAsync();
+
+            if (!cities.Any())
+            {
+                return NotFound("No cities found for the given session.");
+            }
+
+            return Ok(cities);
+        }
+
 
         // GET: api/Centres/5
         [HttpGet("{id}")]
@@ -73,6 +111,7 @@ namespace DelEdAllotment.Controllers
             return NoContent();
         }
 
+
         // POST: api/Centres
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -83,6 +122,7 @@ namespace DelEdAllotment.Controllers
 
             return CreatedAtAction("GetCentres", new { id = centres.Id }, centres);
         }
+
 
         // DELETE: api/Centres/5
         [HttpDelete("{id}")]
@@ -100,10 +140,12 @@ namespace DelEdAllotment.Controllers
             return NoContent();
         }
 
+
         private bool CentresExists(int id)
         {
             return _context.Centre.Any(e => e.Id == id);
         }
+
 
 
         // ✅ GET: api/SeatAllotment/by-room?cityCode=1&centerCode=101&roomNumber=5

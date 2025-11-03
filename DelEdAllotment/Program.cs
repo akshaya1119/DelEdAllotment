@@ -63,11 +63,11 @@ app.UseCors();
 
 app.UseStaticFiles();
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(Path.Combine(@"D:\ApplicationsData\DELED2021-22\photos")),
-    RequestPath = "/static"
-});
+//app.UseStaticFiles(new StaticFileOptions
+//{
+//    FileProvider = new PhysicalFileProvider(Path.Combine(@"D:\ApplicationsData\DELED2021-22\photos")),
+//    RequestPath = "/static"
+//});
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
