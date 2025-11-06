@@ -128,9 +128,9 @@ namespace DelEdAllotment.Controllers
                     .Where(c => c.CentreTableSession == session)
                     .ToListAsync();
 
-                int assignedCentre = reg.AssignedCentre ?? 0;
-                int cityCode = assignedCentre / 100;
-                int centreCode = assignedCentre % 100;
+                int assignedBoth = reg.AssignedBoth ?? 0;
+                int cityCode = assignedBoth / 100;
+                int centreCode = assignedBoth % 100;
 
                 var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
 
@@ -149,12 +149,16 @@ namespace DelEdAllotment.Controllers
                     byte[] signBytes = await System.IO.File.ReadAllBytesAsync(reg.SignaturePath);
                     signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(signBytes)}";
                 }
+                string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
+                string formattedCentreCode = centre != null ? centre.CentreCode.ToString("D2") : null;
+
 
                 var registrationDetails = new
                 {
                     reg.Name,
                     reg.FName,
                     reg.Gender,
+                    reg.RegistrationNo,
                     reg.Category,
                     reg.DOB,
                     reg.Address,
@@ -165,11 +169,11 @@ namespace DelEdAllotment.Controllers
                     ImagePath = imageBase64,
                     SignaturePath = signatureBase64,
                     reg.SubCategory,
-                    AssignedCentre = centre != null ? new
+                    AssignedBoth = centre != null ? new
                     {
-                        CityCode = centre.CityCode,
+                        CityCode = formattedCityCode,
                         CityName = centre.CityNameHindi,
-                        CentreCode = centre.CentreCode,
+                        CentreCode = formattedCentreCode,
                         CentreName = centre.CentreNameHindi
                     } : (object)null
                 };
@@ -211,9 +215,9 @@ namespace DelEdAllotment.Controllers
 
                 foreach (var reg in registrations)
                 {
-                    int assignedCentre = reg.AssignedCentre ?? 0;
-                    int cityCode = assignedCentre / 100;
-                    int centreCode = assignedCentre % 100;
+                    int assignedBoth = reg.AssignedBoth ?? 0;
+                    int cityCode = assignedBoth / 100;
+                    int centreCode = assignedBoth % 100;
 
                     var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
 
@@ -232,6 +236,8 @@ namespace DelEdAllotment.Controllers
                         signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(signBytes)}";
                     }
 
+                    string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
+                    string formattedCentreCode = centre != null ? centre.CentreCode.ToString("D2") : null;
                     registrationDetails.Add(new
                     {
                         reg.Name,
@@ -241,17 +247,18 @@ namespace DelEdAllotment.Controllers
                         reg.DOB,
                         reg.Address,
                         reg.RollNumber,
+                        reg.RegistrationNo,
                         reg.PhotoId,
                         reg.Ph,
                         reg.PhType,
                         ImagePath = imageBase64,
                         SignaturePath = signatureBase64,
                         reg.SubCategory,
-                        AssignedCentre = centre != null ? new
+                        AssignedBoth = centre != null ? new
                         {
-                            CityCode = centre.CityCode,
+                            CityCode = formattedCityCode,
                             CityName = centre.CityNameHindi,
-                            CentreCode = centre.CentreCode,
+                            CentreCode = formattedCentreCode,
                             CentreName = centre.CentreNameHindi
                         } : (object)null
                     });
@@ -266,6 +273,84 @@ namespace DelEdAllotment.Controllers
             }
         }
 
+        //[HttpGet("get-registration-batch")]
+        //public async Task<ActionResult<object>> GetRegistrationBatch(int CityCode, int start = 0, int size = 20)
+        //{
+        //    try
+        //    {
+        //        string session = "2025-26";
+
+        //        var allRegistrations = await _context.Registration
+        //            .Where(r => r.Session == session)
+        //            .OrderBy(r => r.RegistrationNo)
+        //            .ToListAsync();
+
+        //        var registrations = allRegistrations
+        //            .Where(r => (r.AssignedBoth ?? 0) / 100 == CityCode)
+        //            .Skip(start)
+        //            .Take(size)
+        //            .ToList();
+
+        //        if (!registrations.Any())
+        //            return Ok(new object[0]);
+
+        //        var centres = await _context.Centre
+        //            .Where(c => c.CentreTableSession == session && c.CityCode == CityCode)
+        //            .ToListAsync();
+
+        //        var registrationDetails = new List<object>();
+
+        //        foreach (var reg in registrations)
+        //        {
+        //            int assignedBoth = reg.AssignedBoth ?? 0;
+        //            int cityCode = assignedBoth / 100;
+        //            int centreCode = assignedBoth % 100;
+
+        //            var centre = centres.FirstOrDefault(c => c.CityCode == cityCode && c.CentreCode == centreCode);
+
+        //            string imageBase64 = null;
+        //            string signatureBase64 = null;
+
+        //            if (!string.IsNullOrEmpty(reg.ImagePath) && System.IO.File.Exists(reg.ImagePath))
+        //                imageBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(reg.ImagePath))}";
+
+        //            if (!string.IsNullOrEmpty(reg.SignaturePath) && System.IO.File.Exists(reg.SignaturePath))
+        //                signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(reg.SignaturePath))}";
+
+        //            registrationDetails.Add(new
+        //            {
+        //                reg.Name,
+        //                reg.FName,
+        //                reg.Gender,
+        //                reg.Category,
+        //                reg.DOB,
+        //                reg.Address,
+        //                reg.RegistrationNo,
+        //                reg.RollNumber,
+        //                reg.PhotoId,
+        //                reg.Ph,
+        //                reg.PhType,
+        //                ImagePath = imageBase64,
+        //                SignaturePath = signatureBase64,
+        //                reg.SubCategory,
+        //                AssignedBoth = centre != null ? new
+        //                {
+        //                    CityCode = centre.CityCode,
+        //                    CityName = centre.CityNameHindi,
+        //                    CentreCode = centre.CentreCode,
+        //                    CentreName = centre.CentreNameHindi
+        //                } : (object)null
+        //            });
+        //        }
+
+        //        return Ok(registrationDetails);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError,
+        //            new { message = "Error fetching registration batch", details = ex.Message });
+        //    }
+        //}
 
 
         // 🔥 NEW API: Allocate Centres

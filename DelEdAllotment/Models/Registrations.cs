@@ -48,6 +48,7 @@ namespace DelEdAllotment.Models
         public int? RoomNumber { get; set; }
 
         public int? AssignedBoth { get; set; }
+        public string? City { get; set; }
 
     }
 }

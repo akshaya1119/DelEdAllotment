@@ -162,7 +162,7 @@ namespace DelEdAllotment.Controllers
             }
 
             // Fetch all candidates for given room
-            var candidates = await _context.seat_allotments
+            var candidates = await _context.Seat_allotments
                 .Where(x => x.city_code == cityCode
                             && x.center_code == centerCode
                             && x.room_number == roomNumber)
