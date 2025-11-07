@@ -246,7 +246,7 @@ namespace DelEdAllotment.Controllers
                     }
 
                     string address = admitCard != null
-                  ? $"{admitCard.Address}, {admitCard.City}, {admitCard.State}, {admitCard.Pin}"
+                  ? $"{admitCard.Address}, {admitCard.City.ToUpper()}, {admitCard.State.ToUpper()}, {admitCard.Pin}"
                   : string.Empty;
 
                     string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
