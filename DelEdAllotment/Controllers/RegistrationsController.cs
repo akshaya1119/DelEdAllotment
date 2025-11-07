@@ -154,7 +154,7 @@ namespace DelEdAllotment.Controllers
                 string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
                 string formattedCentreCode = centre != null ? centre.CentreCode.ToString("D2") : null;
                 string address = admitCard != null
-                 ? $"{admitCard.Address}, {admitCard.City}, {admitCard.State}, {admitCard.Pin}"
+                 ? $"{admitCard.Address}, {admitCard.City.ToUpper()}, {admitCard.State.ToUpper()}, {admitCard.Pin}"
                  : string.Empty;
 
                 var registrationDetails = new
