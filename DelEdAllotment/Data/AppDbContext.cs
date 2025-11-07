@@ -12,7 +12,7 @@ namespace DelEdAllotment.Data
         public DbSet <Centres> Centre {  get; set; }
         public DbSet <Registrations> Registration { get; set; }
         public DbSet <Seat_Allotment> Seat_allotments { get; set; }
-
+        public DbSet <AdmitCard> AdmitCard { get; set; }
         public DbSet <Room> Rooms { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

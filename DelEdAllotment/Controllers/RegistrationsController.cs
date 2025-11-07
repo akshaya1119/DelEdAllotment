@@ -128,6 +128,8 @@ namespace DelEdAllotment.Controllers
                     .Where(c => c.CentreTableSession == session)
                     .ToListAsync();
 
+                var admitCard = await _context.AdmitCard
+             .FirstOrDefaultAsync(ac => ac.Registration_No == reg.RegistrationNo);
                 int assignedBoth = reg.AssignedBoth ?? 0;
                 int cityCode = assignedBoth / 100;
                 int centreCode = assignedBoth % 100;
@@ -151,7 +153,9 @@ namespace DelEdAllotment.Controllers
                 }
                 string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
                 string formattedCentreCode = centre != null ? centre.CentreCode.ToString("D2") : null;
-
+                string address = admitCard != null
+                 ? $"{admitCard.Address}, {admitCard.City}, {admitCard.State}, {admitCard.Pin}"
+                 : string.Empty;
 
                 var registrationDetails = new
                 {
@@ -160,8 +164,9 @@ namespace DelEdAllotment.Controllers
                     reg.Gender,
                     reg.RegistrationNo,
                     reg.Category,
+                    reg.Warg,
                     reg.DOB,
-                    reg.Address,
+                    Address = address,
                     reg.RollNumber,
                     reg.PhotoId,
                     reg.Ph,
@@ -204,6 +209,9 @@ namespace DelEdAllotment.Controllers
                     .Take(size)
                     .ToListAsync();
 
+                var admitCards = await _context.AdmitCard
+            .Where(ac => registrations.Select(r => r.RegistrationNo).Contains(ac.Registration_No))
+            .ToListAsync();
                 if (!registrations.Any())
                     return Ok(new object[0]); // return empty array if no data
 
@@ -215,6 +223,7 @@ namespace DelEdAllotment.Controllers
 
                 foreach (var reg in registrations)
                 {
+                    var admitCard = admitCards.FirstOrDefault(ac => ac.Registration_No == reg.RegistrationNo);
                     int assignedBoth = reg.AssignedBoth ?? 0;
                     int cityCode = assignedBoth / 100;
                     int centreCode = assignedBoth % 100;
@@ -236,6 +245,10 @@ namespace DelEdAllotment.Controllers
                         signatureBase64 = $"data:image/png;base64,{Convert.ToBase64String(signBytes)}";
                     }
 
+                    string address = admitCard != null
+                  ? $"{admitCard.Address}, {admitCard.City}, {admitCard.State}, {admitCard.Pin}"
+                  : string.Empty;
+
                     string formattedCityCode = centre != null ? centre.CityCode.ToString("D2") : null;
                     string formattedCentreCode = centre != null ? centre.CentreCode.ToString("D2") : null;
                     registrationDetails.Add(new
@@ -245,7 +258,8 @@ namespace DelEdAllotment.Controllers
                         reg.Gender,
                         reg.Category,
                         reg.DOB,
-                        reg.Address,
+                        Address = address,
+                        reg.Warg,
                         reg.RollNumber,
                         reg.RegistrationNo,
                         reg.PhotoId,
