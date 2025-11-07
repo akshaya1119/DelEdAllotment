@@ -49,6 +49,7 @@ namespace DelEdAllotment.Models
 
         public int? AssignedBoth { get; set; }
         public string? City { get; set; }
+        public string? WargHindi { get; set; }
 
     }
 }
