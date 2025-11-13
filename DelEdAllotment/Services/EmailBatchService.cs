@@ -47,7 +47,7 @@ namespace DelEdAllotment.Services
                             }
 
                             _logger.LogInformation($"✅ Batch processed at {DateTime.Now}");
-                            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken); // Wait 5 seconds before next batch
+                            // No delay - send next batch immediately
                         }
                         catch (Exception ex)
                         {

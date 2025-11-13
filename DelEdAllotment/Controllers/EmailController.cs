@@ -55,41 +55,17 @@ namespace DelEdAllotment.Controllers
                 const string session = "2025-26";
                 const int batchSize = 2;
 
-                // 🔹 Get or create log record
-                var log = await _context.EmailLogs
-                    .OrderByDescending(x => x.Id)
-                    .FirstOrDefaultAsync(x => x.Session == session);
+                int totalSuccess = 0;
+                int totalFailed = 0;
+                bool hasMore = true;
 
-                long lastSentRegNo = 0;
-                if (log != null)
-                    lastSentRegNo = log.LastSentRegNo;
-                // ✅ 1. Get top 10 candidates from RegistrationBackup table where Session = '2025-26'
-                var candidates = await _context.registrationBackups
-                    .Where(r => r.Session == "2025-26" && r.Email != null && r.Email != "" && r.RegistrationNo > lastSentRegNo)
-                    .OrderBy(r => r.BackupId)
-                    
-            .Take(batchSize)
-                    .ToListAsync();
-
-                if (!candidates.Any())
-                {
-                    if (log != null)
-                    {
-                        log.Status = "Completed";
-                        await _context.SaveChangesAsync();
-                    }
-                    return Ok("✅ All emails have already been sent.");
-                }
-                // ✅ 2. AWS SES credentials (hardcoded same as your EmailService)
+                // ✅ 2. AWS SES credentials
                 string FROM = "info@ukdeled.com";
                 string FROMNAME = " D.El.Ed. Admission Test Examination, 2025";
                 string SMTP_USERNAME = "AKIAVPTQXZJTH37MZ3CO";
                 string SMTP_PASSWORD = "BE2OamjqDFxItg//OkQ5oPplgz1mKGq7l8KDmJdty8Zi";
                 string HOST = "email-smtp.us-east-1.amazonaws.com";
                 int PORT = 587;
-
-                int success = 0;
-                int failed = 0;
 
                 using var smtpClient = new SmtpClient(HOST, PORT)
                 {
@@ -99,16 +75,51 @@ namespace DelEdAllotment.Controllers
 
                 System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-                // ✅ 3. Loop through each candidate and send email
-                foreach (var candidate in candidates)
+                // Keep looping until all emails are sent
+                while (hasMore)
                 {
-                    string encryptedRegNo = Encrypt(candidate.RegistrationNo.ToString());
-                    string lg = "/Bm1kUJ/FWdc7GiCk/IpCQ==";
-                    string em = "/Bm1kUJ/FWdc7GiCk/IpCQ==";
-                    string admitCardUrl = $"https://ukdeled.com/pdfviewer.aspx?id={WebUtility.UrlEncode(encryptedRegNo)}&lg={WebUtility.UrlEncode(lg)}&em={WebUtility.UrlEncode(em)}";
-                    string subject = "डी.एल. एड. (D.EI.Ed.) प्रशिक्षण प्रवेश परीक्षा- प्रवेश पत्र";
+                    // 🔹 Get or create log record
+                    var log = await _context.EmailLogs
+                        .OrderByDescending(x => x.Id)
+                        .FirstOrDefaultAsync(x => x.Session == session);
 
-                    string body = $@"
+                    long lastSentRegNo = 0;
+                    if (log != null)
+                        lastSentRegNo = log.LastSentRegNo;
+
+                    // ✅ 1. Get top batch candidates
+                    var candidates = await _context.registrationBackups
+                        .Where(r => r.Session == "2025-26" && r.Email != null && r.Email != "" && r.RegistrationNo > lastSentRegNo)
+                        .OrderBy(r => r.RegistrationNo)
+                        .Take(batchSize)
+                        .ToListAsync();
+
+                    if (!candidates.Any())
+                    {
+                        if (log != null)
+                        {
+                            log.Status = "Completed";
+                            await _context.SaveChangesAsync();
+                        }
+                        hasMore = false;
+                        break;
+                    }
+
+                    int success = 0;
+                    int failed = 0;
+
+                    // ✅ 3. Loop through each candidate and send email
+                    foreach (var candidate in candidates)
+                    {
+                        try
+                        {
+                            string encryptedRegNo = Encrypt(candidate.RegistrationNo.ToString());
+                            string lg = "/Bm1kUJ/FWdc7GiCk/IpCQ==";
+                            string em = "/Bm1kUJ/FWdc7GiCk/IpCQ==";
+                            string admitCardUrl = $"https://ukdeled.com/pdfviewer.aspx?id={WebUtility.UrlEncode(encryptedRegNo)}&lg={WebUtility.UrlEncode(lg)}&em={WebUtility.UrlEncode(em)}";
+                            string subject = "डी.एल. एड. (D.EI.Ed.) प्रशिक्षण प्रवेश परीक्षा- प्रवेश पत्र";
+
+                            string body = $@"
 प्रिय {candidate.Name},
 <br><br>
 द्विवर्षीय डी.एल.एड. (D.EI.Ed.) प्रशिक्षण हेतु प्रवेश परीक्षा 2025 के प्रवेश पत्र उत्तराखण्ड विद्यालयी शिक्षा परिषद्, रामनगर (नैनीताल) द्वारा निर्गत कर दिए गए हैं।
@@ -129,60 +140,63 @@ namespace DelEdAllotment.Controllers
 <a href='https://ukdeled.com'>www.ukdeled.com</a>
 ";
 
-                    var message = new MailMessage
-                    {
-                        From = new MailAddress(FROM, FROMNAME),
-                        Subject = subject,
-                        Body = body,
-                        IsBodyHtml = true
-                    };
+                            var message = new MailMessage
+                            {
+                                From = new MailAddress(FROM, FROMNAME),
+                                Subject = subject,
+                                Body = body,
+                                IsBodyHtml = true
+                            };
 
-                    message.To.Add(candidate.Email);
-                    message.Bcc.Add("deled2k25@gmail.com"); // backup mail copy
+                            message.To.Add(candidate.Email);
+                            message.Bcc.Add("deled2k25@gmail.com");
 
-                    try
-                    {
-                        await smtpClient.SendMailAsync(message);
-                        success++;
-                        Console.WriteLine($"✅ Email sent to {candidate.Email}");
+                            await smtpClient.SendMailAsync(message);
+                            success++;
+                            Console.WriteLine($"✅ Email sent to RegNo: {candidate.RegistrationNo}, Email: {candidate.Email}");
+                        }
+                        catch (Exception ex)
+                        {
+                            failed++;
+                            Console.WriteLine($"❌ Failed to send to RegNo: {candidate.RegistrationNo}, Email: {candidate.Email}: {ex.Message}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        failed++;
-                        Console.WriteLine($"❌ Failed to send to {candidate.Email}: {ex.Message}");
-                    }
-                }
 
+                    totalSuccess += success;
+                    totalFailed += failed;
 
-                var lastCandidate = candidates.Last();
-                if (log == null)
-                {
-                    log = new EmailLog
+                    var lastCandidate = candidates.Last();
+                    
+                    // Create a new log entry for each batch
+                    var newLog = new EmailLog
                     {
                         Session = session,
-                        LastSentRegNo = lastCandidate.RegistrationNo,
+                        LastSentRegNo = (int)lastCandidate.RegistrationNo,
                         TotalSent = success,
                         LastSentAt = DateTime.Now,
                         Status = "InProgress"
                     };
-                    _context.EmailLogs.Add(log);
-                }
-                else
-                {
-                    log.LastSentRegNo = lastCandidate.RegistrationNo;
-                    log.TotalSent += success;
-                    log.LastSentAt = DateTime.Now;
-                    log.Status = "InProgress";
-                }
+                    _context.EmailLogs.Add(newLog);
 
-                await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"📊 Progress: Batch sent: {success}, Last RegNo: {lastCandidate.RegistrationNo}");
+                }
+                
+                // Mark the last entry as completed
+                var finalLog = await _context.EmailLogs
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync(x => x.Session == session);
+                if (finalLog != null)
+                {
+                    finalLog.Status = "Completed";
+                    await _context.SaveChangesAsync();
+                }
 
                 return Ok(new
                 {
-                    Message = $"Batch sent successfully.",
-                    Success = success,
-                    Failed = failed,
-                    LastSentRegNo = lastCandidate.RegistrationNo
+                    Message = "✅ All emails sent successfully!",
+                    TotalSuccess = totalSuccess,
+                    TotalFailed = totalFailed
                 });
             }
             catch (Exception ex)
