@@ -14,6 +14,8 @@ namespace DelEdAllotment.Data
         public DbSet <Seat_Allotment> Seat_allotments { get; set; }
         public DbSet <AdmitCard> AdmitCard { get; set; }
         public DbSet <Room> Rooms { get; set; }
+        public DbSet <RegistrationBackup> registrationBackups { get; set; }
+        public DbSet <EmailLog> EmailLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

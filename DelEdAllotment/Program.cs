@@ -29,6 +29,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
+
 // Add JWT Authentication (if you're using JWT tokens for securing your API)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
